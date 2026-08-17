@@ -37,24 +37,77 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     setLoading(true);
-    const res = await axios.post(`${API_BASE}/api/auth/login`, credentials, { withCredentials: true });
-    if (res.data.success) {
-      setUser(res.data.user);
-      setIsAuthenticated(true);
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/login`, credentials, { withCredentials: true });
+      if (res.data.success) {
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+      }
+      return res.data;
+    } catch (err) {
+      // Re-throw with the backend's message so the UI can display it
+      const message = err.response?.data?.message || 'Login failed. Please try again.';
+      throw new Error(message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    return res.data;
   };
 
   const register = async (userData) => {
     setLoading(true);
-    const res = await axios.post(`${API_BASE}/api/auth/register`, userData, { withCredentials: true });
-    if (res.data.success) {
-      setUser(res.data.user);
-      setIsAuthenticated(true);
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/register`, userData, { withCredentials: true });
+      if (res.data.success) {
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+      }
+      return res.data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Registration failed. Please try again.';
+      throw new Error(message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    return res.data;
+  };
+
+  // New: OTP-verified registration (used by new signup flow)
+  const registerVerified = async (userData) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/register-verified`, userData, { withCredentials: true });
+      if (res.data.success) {
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+      }
+      return res.data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Account creation failed. Please try again.';
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Send WhatsApp OTP via Twilio Verify
+  const sendOtp = async (phone) => {
+    try {
+      const res = await axios.post(`${API_BASE}/api/otp/send`, { phone });
+      return res.data; // { success, message, phone }
+    } catch (err) {
+      const message = err.response?.data?.message || 'OTP could not be sent. Please try again.';
+      throw new Error(message);
+    }
+  };
+
+  // Verify WhatsApp OTP
+  const verifyOtp = async (phone, code) => {
+    try {
+      const res = await axios.post(`${API_BASE}/api/otp/verify`, { phone, code });
+      return res.data; // { success, message, phone }
+    } catch (err) {
+      const message = err.response?.data?.message || 'OTP verification failed. Please try again.';
+      throw new Error(message);
+    }
   };
 
   const logout = async () => {
@@ -75,6 +128,9 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     register,
+    registerVerified,
+    sendOtp,
+    verifyOtp,
     logout,
     updateUser,
   };

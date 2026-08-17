@@ -1,12 +1,36 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, match: /.+@.+\..+/ },
-  phone: { type: String, required: true },
+  name: { type: String, required: true, trim: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/.+@.+\..+/, 'Invalid email address'],
+  },
+  phone: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+  },
   password: { type: String, required: true },
-  role: { type: String, enum: ['needer', 'provider'], required: true },
+  role: {
+    type: String,
+    // 'customer' = service needer, 'provider' = service provider, 'admin' = platform admin
+    enum: ['customer', 'provider', 'admin'],
+    required: true,
+  },
+  phoneVerified: { type: Boolean, default: false },
   profileImage: { type: String },
+  address: {
+    street: { type: String },
+    city: { type: String },
+    pincode: { type: String },
+    landmark: { type: String },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
