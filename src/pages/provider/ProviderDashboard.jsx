@@ -1,23 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaBriefcase, FaBell, FaChartLine, FaStar, FaClock, FaCheckCircle } from 'react-icons/fa';
-import { bookings, notifications } from '../../data/mockData';
+import { mockApi } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import EarningCard from '../../components/provider/EarningCard';
 import BookingRequestCard from '../../components/provider/BookingRequestCard';
+import toast from 'react-hot-toast';
 
 const ProviderDashboard = () => {
   const { user } = useAuth();
-  const [activeBookings, setActiveBookings] = useState(
-    bookings.filter(b => b.status === 'confirmed' || b.status === 'upcoming')
-  );
+  const [activeBookings, setActiveBookings] = useState([]);
 
-  const handleAccept = (id) => {
-    setActiveBookings(prev => prev.filter(b => b.id !== id));
+  useEffect(() => {
+    const loadActiveBookings = async () => {
+      try {
+        const response = await mockApi.getBookings();
+        setActiveBookings(
+          response.bookings.filter(b => b.status === 'confirmed' || b.status === 'upcoming')
+        );
+      } catch (e) {
+        console.error('Failed to load active bookings', e);
+      }
+    };
+    loadActiveBookings();
+  }, []);
+
+  const handleAccept = async (id) => {
+    try {
+      await mockApi.updateBookingStatus(id, 'confirmed');
+      setActiveBookings(prev => prev.filter(b => b.id !== id));
+    } catch (e) {
+      toast.error('Failed to accept booking');
+    }
   };
 
-  const handleReject = (id) => {
-    setActiveBookings(prev => prev.filter(b => b.id !== id));
+  const handleReject = async (id) => {
+    try {
+      await mockApi.updateBookingStatus(id, 'cancelled');
+      setActiveBookings(prev => prev.filter(b => b.id !== id));
+    } catch (e) {
+      toast.error('Failed to reject booking');
+    }
   };
 
   const recentActivity = [

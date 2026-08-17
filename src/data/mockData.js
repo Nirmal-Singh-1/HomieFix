@@ -678,94 +678,113 @@ export const users = [
   { id: 5, name: 'Rajesh Kumar', email: 'rajesh@example.com', phone: '+91 99887 76659', role: 'customer', status: 'active', joinedDate: '2025-10-12', bookings: 7, spent: 6100 },
 ];
 
-// Mock API functions
+// Real Backend API integration
+const API_URL = 'http://localhost:5000/api';
+
+const getHeaders = () => {
+  const token = localStorage.getItem('homefix_token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 export const mockApi = {
-  login: (credentials) => new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (credentials.email && credentials.password) {
-        const userData = {
-          id: 1,
-          name: credentials.role === 'admin' ? 'Admin User' : credentials.role === 'provider' ? 'Rahul Kumar' : 'Ankit Sharma',
-          email: credentials.email,
-          phone: '+91 99887 76655',
-          role: credentials.role || 'customer',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face',
-          address: '123, Main Street, Sector 12, Meerut, UP 250001',
-          city: 'Meerut',
-        };
-        resolve({ success: true, user: userData, token: 'mock-jwt-token-xyz' });
-      } else {
-        reject({ success: false, message: 'Invalid credentials' });
-      }
-    }, 1000);
-  }),
+  login: async (credentials) => {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Login failed');
+    return data;
+  },
 
-  register: (userData) => new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        user: { id: Date.now(), ...userData },
-        message: 'Registration successful!',
-      });
-    }, 1000);
-  }),
+  register: async (userData) => {
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Registration failed');
+    return data;
+  },
 
-  getServices: (filters) => new Promise((resolve) => {
-    setTimeout(() => {
-      let filtered = [...services];
-      if (filters?.category) {
-        filtered = filtered.filter(s => s.category === filters.category);
-      }
-      if (filters?.search) {
-        const q = filters.search.toLowerCase();
-        filtered = filtered.filter(s => s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q));
-      }
-      if (filters?.sort === 'price-low') filtered.sort((a, b) => a.price - b.price);
-      if (filters?.sort === 'price-high') filtered.sort((a, b) => b.price - a.price);
-      if (filters?.sort === 'rating') filtered.sort((a, b) => b.rating - a.rating);
-      resolve({ success: true, services: filtered });
-    }, 500);
-  }),
+  getServices: async (filters) => {
+    let url = `${API_URL}/services`;
+    const params = new URLSearchParams();
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.sort) params.append('sort', filters.sort);
+    if (params.toString()) url += `?${params.toString()}`;
 
-  getBookings: () => new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, bookings });
-    }, 500);
-  }),
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch services');
+    return data;
+  },
 
-  createBooking: (bookingData) => new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        booking: {
-          id: `HF${1025 + Math.floor(Math.random() * 100)}`,
-          ...bookingData,
-          status: 'confirmed',
-          createdAt: new Date().toISOString(),
-        },
-      });
-    }, 1500);
-  }),
+  getBookings: async () => {
+    const res = await fetch(`${API_URL}/bookings`, {
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch bookings');
+    return data;
+  },
 
-  processPayment: (paymentData) => new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (Math.random() > 0.1) {
+  createBooking: async (bookingData) => {
+    const res = await fetch(`${API_URL}/bookings`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(bookingData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to create booking');
+    return data;
+  },
+
+  processPayment: async (paymentData) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
         resolve({ success: true, transactionId: `TXN${Date.now()}`, message: 'Payment successful' });
-      } else {
-        reject({ success: false, message: 'Payment failed. Please try again.' });
-      }
-    }, 2000);
-  }),
+      }, 1000);
+    });
+  },
 
-  updateProfile: (profileData) => new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, user: profileData, message: 'Profile updated successfully' });
-    }, 1000);
-  }),
+  updateProfile: async (profileData) => {
+    const res = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(profileData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to update profile');
+    return data;
+  },
 
-  getEarnings: () => new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, earnings: earningsData });
-    }, 500);
-  }),
+  getEarnings: async () => {
+    const res = await fetch(`${API_URL}/earnings`, {
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch earnings');
+    return data;
+  },
+
+  updateBookingStatus: async (id, status) => {
+    const res = await fetch(`${API_URL}/bookings/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to update booking status');
+    return data;
+  },
 };

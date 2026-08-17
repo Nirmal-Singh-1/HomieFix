@@ -63,13 +63,13 @@ const AdminDashboard = () => {
                   <FaArrowRight className="text-xs text-amber-400 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
+              <Link to="/admin/bookings" className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors group">
+                <span className="text-sm font-medium text-emerald-700">Manage Bookings</span>
+                <FaArrowRight className="text-xs text-emerald-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
               <Link to="/admin/services" className="flex items-center justify-between p-3 rounded-xl bg-primary-50 hover:bg-primary-100 transition-colors group">
                 <span className="text-sm font-medium text-primary-700">Add New Service</span>
                 <FaArrowRight className="text-xs text-primary-400 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link to="/admin/users" className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors group">
-                <span className="text-sm font-medium text-emerald-700">View Reports</span>
-                <FaArrowRight className="text-xs text-emerald-400 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           </div>
@@ -92,25 +92,44 @@ const AdminDashboard = () => {
         </motion.div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Bookings */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="card p-5">
-        <h2 className="font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          {[
-            { icon: '🆕', text: 'New provider application: Deepak Verma (Carpenter)', time: '10 min ago', type: 'warning' },
-            { icon: '✅', text: 'Booking #HF1024 completed successfully', time: '1 hour ago', type: 'success' },
-            { icon: '👤', text: '5 new users registered today', time: '2 hours ago', type: 'info' },
-            { icon: '💰', text: 'Daily revenue target achieved: ₹25,100', time: '3 hours ago', type: 'success' },
-            { icon: '⚠️', text: 'Provider Rohit Mehta reported by customer', time: '5 hours ago', type: 'danger' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-              <span className="text-lg">{item.icon}</span>
-              <div className="flex-1">
-                <p className="text-sm text-gray-700">{item.text}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{item.time}</p>
-              </div>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900">Recent Bookings</h2>
+          <Link to="/admin/bookings" className="text-sm font-semibold text-primary-600 hover:text-primary-700">View All</Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-500">
+            <thead>
+              <tr className="border-b border-gray-100 text-gray-400 text-xs uppercase font-semibold">
+                <th className="py-3 px-4">Booking ID</th>
+                <th className="py-3 px-4">Service</th>
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Amount</th>
+                <th className="py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { id: 'HF1024', serviceName: 'Deep House Cleaning', customerName: 'Rohan Gupta', total: 1899, status: 'completed' },
+                { id: 'HF1025', serviceName: 'AC Filter Cleaning', customerName: 'Priya Verma', total: 499, status: 'upcoming' },
+                { id: 'HF1026', serviceName: 'Kitchen Plumbing', customerName: 'Amit Singh', total: 850, status: 'ongoing' },
+                { id: 'HF1027', serviceName: 'Ceiling Fan Repair', customerName: 'Neha Sharma', total: 299, status: 'confirmed' },
+              ].map((b) => (
+                <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td className="py-3.5 px-4 font-mono font-semibold text-primary-600 text-xs">#{b.id}</td>
+                  <td className="py-3.5 px-4 font-medium text-gray-900">{b.serviceName}</td>
+                  <td className="py-3.5 px-4">{b.customerName}</td>
+                  <td className="py-3.5 px-4 font-semibold text-gray-900">₹{b.total}</td>
+                  <td className="py-3.5 px-4">
+                    <span className={`badge ${b.status === 'completed' ? 'badge-success' : b.status === 'ongoing' ? 'badge-warning' : 'badge-primary'}`}>
+                      {b.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </motion.div>
     </div>

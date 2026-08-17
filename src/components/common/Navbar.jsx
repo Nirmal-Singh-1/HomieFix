@@ -66,6 +66,19 @@ const Navbar = () => {
               <span className="text-xl font-bold text-gray-900">Home<span className="text-primary-600">Fix</span></span>
             </Link>
 
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center gap-6 ml-6">
+              <Link to="/" className={`text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-primary-600' : 'text-gray-600 hover:text-primary-600'}`}>
+                Home
+              </Link>
+              <Link to="/services" className={`text-sm font-medium transition-colors ${location.pathname === '/services' ? 'text-primary-600' : 'text-gray-600 hover:text-primary-600'}`}>
+                Services
+              </Link>
+              <Link to="/help" className={`text-sm font-medium transition-colors ${location.pathname === '/help' ? 'text-primary-600' : 'text-gray-600 hover:text-primary-600'}`}>
+                Help
+              </Link>
+            </div>
+
             {/* Search Bar — Desktop */}
             <form onSubmit={handleSearch} className="hidden md:flex items-center flex-1 max-w-lg mx-8">
               <div className="relative w-full">

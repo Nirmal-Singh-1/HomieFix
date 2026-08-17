@@ -9,6 +9,7 @@ import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import Sidebar from './components/common/Sidebar';
 import { PageLoader } from './components/common/LoadingSpinner';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -33,15 +34,16 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageUsers from './pages/admin/ManageUsers';
 import ManageProviders from './pages/admin/ManageProviders';
 import ManageServices from './pages/admin/ManageServices';
+import AdminBookings from './pages/admin/AdminBookings';
 
-// Protected Route
-const ProtectedRoute = ({ allowedRoles, children }) => {
-  const { user, isAuthenticated, loading } = useAuth();
-  if (loading) return <PageLoader />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (allowedRoles && !allowedRoles.includes(user?.role)) return <Navigate to="/" replace />;
-  return children || <Outlet />;
-};
+// Static Customer Pages
+import About from './pages/customer/About';
+import Careers from './pages/customer/Careers';
+import Terms from './pages/customer/Terms';
+import Privacy from './pages/customer/Privacy';
+import Help from './pages/customer/Help';
+
+
 
 // Page transition wrapper
 const PageTransition = ({ children }) => {
@@ -96,6 +98,7 @@ const ProviderLayout = () => {
 // Admin Layout
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: FaChartBar, end: true },
+  { to: '/admin/bookings', label: 'Bookings', icon: FaClipboardList },
   { to: '/admin/users', label: 'Users', icon: FaUsers },
   { to: '/admin/providers', label: 'Providers', icon: FaUserTie, badge: '12' },
   { to: '/admin/services', label: 'Services', icon: FaBoxOpen },
@@ -185,6 +188,7 @@ function App() {
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
+            <Route path="bookings" element={<AdminBookings />} />
             <Route path="users" element={<ManageUsers />} />
             <Route path="providers" element={<ManageProviders />} />
             <Route path="services" element={<ManageServices />} />
@@ -195,6 +199,13 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
+            
+            {/* New Static Pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/help" element={<Help />} />
 
             {/* Protected customer routes */}
             <Route path="/booking" element={<ProtectedRoute allowedRoles={['customer']}><Booking /></ProtectedRoute>} />

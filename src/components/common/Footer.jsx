@@ -49,12 +49,12 @@ const Footer = () => {
             <h4 className="text-white font-semibold mb-4">Company</h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'About Us', to: '#' },
-                { label: 'Careers', to: '#' },
+                { label: 'About Us', to: '/about' },
+                { label: 'Careers', to: '/careers' },
                 { label: 'Become a Provider', to: '/register?role=provider' },
-                { label: 'Terms of Service', to: '#' },
-                { label: 'Privacy Policy', to: '#' },
-                { label: 'Help Center', to: '#' },
+                { label: 'Terms of Service', to: '/terms' },
+                { label: 'Privacy Policy', to: '/privacy' },
+                { label: 'Help Center', to: '/help' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link to={item.to} className="text-sm text-gray-400 hover:text-primary-400 transition-colors">

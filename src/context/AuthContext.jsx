@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { mockApi } from '../data/mockData';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext(null);
 
@@ -14,62 +14,59 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  // Fetch current authenticated user on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem('homefix_user');
-    if (savedUser) {
+    const fetchMe = async () => {
       try {
-        const parsed = JSON.parse(savedUser);
-        setUser(parsed);
-        setIsAuthenticated(true);
+        const res = await axios.get(`${API_BASE}/api/auth/me`, { withCredentials: true });
+        if (res.data.success) {
+          setUser(res.data.user);
+          setIsAuthenticated(true);
+        }
       } catch (e) {
-        localStorage.removeItem('homefix_user');
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+    fetchMe();
   }, []);
 
   const login = async (credentials) => {
     setLoading(true);
-    try {
-      const response = await mockApi.login(credentials);
-      setUser(response.user);
+    const res = await axios.post(`${API_BASE}/api/auth/login`, credentials, { withCredentials: true });
+    if (res.data.success) {
+      setUser(res.data.user);
       setIsAuthenticated(true);
-      localStorage.setItem('homefix_user', JSON.stringify(response.user));
-      localStorage.setItem('homefix_token', response.token);
-      setLoading(false);
-      return response;
-    } catch (error) {
-      setLoading(false);
-      throw error;
     }
+    setLoading(false);
+    return res.data;
   };
 
   const register = async (userData) => {
     setLoading(true);
-    try {
-      const response = await mockApi.register(userData);
-      setUser(response.user);
+    const res = await axios.post(`${API_BASE}/api/auth/register`, userData, { withCredentials: true });
+    if (res.data.success) {
+      setUser(res.data.user);
       setIsAuthenticated(true);
-      localStorage.setItem('homefix_user', JSON.stringify(response.user));
-      setLoading(false);
-      return response;
-    } catch (error) {
-      setLoading(false);
-      throw error;
     }
+    setLoading(false);
+    return res.data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    setLoading(true);
+    await axios.post(`${API_BASE}/api/auth/logout`, {}, { withCredentials: true });
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('homefix_user');
-    localStorage.removeItem('homefix_token');
+    setLoading(false);
   };
 
   const updateUser = (updatedData) => {
-    const updated = { ...user, ...updatedData };
-    setUser(updated);
-    localStorage.setItem('homefix_user', JSON.stringify(updated));
+    setUser((prev) => ({ ...prev, ...updatedData }));
   };
 
   const value = {
@@ -82,11 +79,5 @@ export const AuthProvider = ({ children }) => {
     updateUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export default AuthContext;
