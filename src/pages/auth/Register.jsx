@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 
 import toast from 'react-hot-toast';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -16,7 +17,7 @@ const STEP_ROLE = 2;
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, googleLogin } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(STEP_INFO);
   const [showPassword, setShowPassword] = useState(false);
@@ -333,6 +334,43 @@ const Register = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-center">
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    setIsLoading(true);
+                    try {
+                      // Pass selectedRole so if they changed it, it registers as that role
+                      const result = await googleLogin(credentialResponse.credential, selectedRole);
+                      toast.success('Account created successfully! 🎉');
+                      const role = result?.user?.role;
+                      if (role === 'admin') navigate('/admin');
+                      else if (role === 'provider') navigate('/provider');
+                      else navigate('/');
+                    } catch (err) {
+                      toast.error(err.message || 'Google signup failed.');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  onError={() => {
+                    toast.error('Google Sign-In failed. Please try again.');
+                  }}
+                  theme="outline"
+                  size="large"
+                  text="signup_with"
+                />
+              </div>
+            </div>
 
             <p className="text-center text-sm text-gray-500 mt-6">
               Already have an account?{' '}

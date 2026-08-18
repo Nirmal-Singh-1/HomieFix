@@ -53,6 +53,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async (credential, role) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/google`, { credential, role }, { withCredentials: true });
+      if (res.data.success) {
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+      }
+      return res.data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Google login failed. Please try again.';
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (userData) => {
     setLoading(true);
     try {
@@ -127,6 +144,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated,
     login,
+    googleLogin,
     register,
     registerVerified,
     sendOtp,

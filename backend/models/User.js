@@ -16,7 +16,9 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
   },
-  password: { type: String, required: true },
+  password: { type: String }, // optional for Google users
+  authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+  googleId: { type: String, unique: true, sparse: true },
   role: {
     type: String,
     // 'customer' = service needer, 'provider' = service provider, 'admin' = platform admin

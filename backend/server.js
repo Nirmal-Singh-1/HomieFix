@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
+const { OAuth2Client } = require('google-auth-library');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -25,6 +26,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -147,6 +149,64 @@ app.post('/api/auth/register-verified', async (req, res) => {
       return res.status(400).json({ success: false, message: msg });
     }
     res.status(500).json({ success: false, message: 'Account creation failed. Please try again.' });
+  }
+});
+
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential) {
+      return res.status(400).json({ success: false, message: 'Google credential missing.' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub, email, name, picture } = payload;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Google account must have an email.' });
+    }
+
+    // Check if user exists by googleId
+    let user = await User.findOne({ googleId: sub });
+
+    if (!user) {
+      // Check if user exists by email
+      user = await User.findOne({ email: email.toLowerCase() });
+      if (user) {
+        // Link google account to existing user
+        user.googleId = sub;
+        user.authProvider = 'google';
+        if (!user.profileImage && picture) {
+          user.profileImage = picture;
+        }
+        await user.save();
+      } else {
+        // Create new user
+        // Generate a random placeholder phone to satisfy the unique phone index without asking user.
+        const dummyPhone = `google_${sub}`;
+        user = await User.create({
+          name: name,
+          email: email.toLowerCase(),
+          phone: dummyPhone,
+          role: role && ['customer', 'provider'].includes(role) ? role : 'customer',
+          googleId: sub,
+          authProvider: 'google',
+          profileImage: picture,
+          phoneVerified: true
+        });
+      }
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    res.cookie('token', token, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role, phoneVerified: user.phoneVerified, profileImage: user.profileImage } });
+  } catch (err) {
+    console.error('[Google Auth Error]', err.message);
+    res.status(500).json({ success: false, message: 'Google authentication failed. Please try again.' });
   }
 });
 
