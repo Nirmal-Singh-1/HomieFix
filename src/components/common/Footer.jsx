@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaPhone, FaEnvelope, FaMapMarkerAlt, FaHeart, FaShieldAlt } from 'react-icons/fa';
+import { FaTwitter, FaInstagram, FaLinkedin, FaPhone, FaEnvelope, FaMapMarkerAlt, FaHeart, FaShieldAlt } from 'react-icons/fa';
 
 const Footer = () => {
   return (
@@ -11,7 +11,7 @@ const Footer = () => {
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 pb-12 border-b border-slate-800/80">
-          
+
           {/* Column 1: Brand Info */}
           <div className="space-y-4">
             <Link to="/" className="inline-flex items-center gap-2">
@@ -21,14 +21,13 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Your trusted marketplace for verified home services in Dwarahat & Uttarakhand. Professional electricians, plumbers, cleaners, and more right at your doorstep.
+              Your trusted marketplace for verified home services in your area. Professional electricians, plumbers, cleaners, and more right at your doorstep.
             </p>
             <div className="flex items-center gap-2 pt-2">
               {[
-                { icon: FaFacebook, href: '#', label: 'Facebook' },
-                { icon: FaTwitter, href: '#', label: 'Twitter' },
+                { icon: FaTwitter, href: 'https://x.com/NirmalBish94960', label: 'Twitter' },
                 { icon: FaInstagram, href: '#', label: 'Instagram' },
-                { icon: FaLinkedin, href: '#', label: 'LinkedIn' },
+                { icon: FaLinkedin, href: 'https://www.linkedin.com/in/nirmalsingh110/', label: 'LinkedIn' },
               ].map((social, idx) => (
                 <a
                   key={idx}
@@ -70,10 +69,8 @@ const Footer = () => {
             <ul className="space-y-2.5 text-sm">
               {[
                 { label: 'About Us', to: '/about' },
-                { label: 'Careers', to: '/careers' },
                 { label: 'Help Center', to: '/help' },
                 { label: 'Terms of Service', to: '/terms' },
-                { label: 'Privacy Policy', to: '/privacy' },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
@@ -123,17 +120,7 @@ const Footer = () => {
                 </div>
               </a>
 
-              {/* Location */}
-              <div className="flex items-start gap-3 p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FaMapMarkerAlt className="text-xs" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">Location</p>
-                  <p className="font-semibold text-white leading-snug">Dwarahat, Uttarakhand</p>
-                  <p className="text-xs text-slate-400">Pin Code: 263653, India</p>
-                </div>
-              </div>
+
             </div>
           </div>
 
@@ -144,9 +131,7 @@ const Footer = () => {
           <p>© {new Date().getFullYear()} HomeFix. All rights reserved.</p>
           <div className="flex items-center gap-1 bg-slate-800/60 px-4 py-2 rounded-full border border-slate-700/50">
             <span>Made with</span>
-            <FaHeart className="text-red-500 animate-pulse text-xs mx-0.5" />
-            <span>in</span>
-            <span className="font-semibold text-white">Dwarahat, Uttarakhand</span>
+            <FaHeart className="text-red-500 animate-pulse text-xs mx-0.5" />           
           </div>
         </div>
       </div>

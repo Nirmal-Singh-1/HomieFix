@@ -124,11 +124,10 @@ const Help = () => {
       <section className="py-12 md:py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="section-title text-center mb-8">Still need help?</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {[
               { icon: <FaPhone className="text-primary-500" />, title: 'Call Us', desc: '+91 7451086410', sub: 'Mon-Sat, 8AM-10PM', href: 'tel:+917451086410' },
               { icon: <FaEnvelope className="text-primary-500" />, title: 'Email Us', desc: 'support@homefix.in', sub: 'Response within 24 hours', href: 'mailto:support@homefix.in' },
-              { icon: <FaComments className="text-primary-500" />, title: 'Visit Us', desc: 'Dwarahat, Uttarakhand', sub: 'Pin: 263653', href: '#' },
             ].map((item, i) => (
               <motion.a key={i} href={item.href} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className="card p-6 text-center hover:shadow-lg transition-shadow cursor-pointer group block">

@@ -44,9 +44,7 @@ import AdminBookings from './pages/admin/AdminBookings';
 
 // Static Customer Pages
 import About from './pages/customer/About';
-import Careers from './pages/customer/Careers';
 import Terms from './pages/customer/Terms';
-import Privacy from './pages/customer/Privacy';
 import Help from './pages/customer/Help';
 
 
@@ -212,9 +210,7 @@ function App() {
             
             {/* New Static Pages */}
             <Route path="/about" element={<About />} />
-            <Route path="/careers" element={<Careers />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
             <Route path="/help" element={<Help />} />
 
             {/* Protected customer routes */}

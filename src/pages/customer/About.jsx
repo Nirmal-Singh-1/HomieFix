@@ -2,25 +2,11 @@ import { motion } from 'framer-motion';
 import { FaShieldAlt, FaHeart, FaUsers, FaRocket, FaCheckCircle, FaMapMarkerAlt } from 'react-icons/fa';
 
 const About = () => {
-  const team = [
-    { name: 'Nirmal Singh', role: 'Founder & CEO', emoji: '👨‍💼', bio: 'Passionate about transforming home services with technology.' },
-    { name: 'Priya Sharma', role: 'CTO', emoji: '👩‍💻', bio: 'Building scalable platforms that connect people.' },
-    { name: 'Amit Verma', role: 'Head of Operations', emoji: '👨‍🔧', bio: 'Ensuring quality service delivery across all cities.' },
-    { name: 'Sneha Gupta', role: 'Head of Design', emoji: '👩‍🎨', bio: 'Crafting delightful experiences for every user.' },
-  ];
-
   const values = [
     { icon: <FaShieldAlt className="text-primary-500" />, title: 'Trust & Safety', desc: 'Every professional is background-verified and trained before joining our platform.' },
     { icon: <FaHeart className="text-red-500" />, title: 'Customer First', desc: 'We obsess over customer satisfaction and go the extra mile every single time.' },
     { icon: <FaUsers className="text-emerald-500" />, title: 'Community', desc: 'We empower local service professionals to build sustainable livelihoods.' },
     { icon: <FaRocket className="text-secondary-500" />, title: 'Innovation', desc: 'Leveraging technology to make home services seamless and affordable.' },
-  ];
-
-  const milestones = [
-    { year: '2023', event: 'HomeFix founded in Dwarahat, Uttarakhand', icon: '🚀' },
-    { year: '2024', event: 'Expanded to 5 cities across North India', icon: '🌍' },
-    { year: '2025', event: 'Crossed 10,000+ happy customers', icon: '🎉' },
-    { year: '2026', event: 'Launched provider app & premium services', icon: '📱' },
   ];
 
   return (
@@ -96,52 +82,6 @@ const About = () => {
                 <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-xl mx-auto">{v.icon}</div>
                 <h3 className="font-semibold text-gray-900 mt-4">{v.title}</h3>
                 <p className="text-sm text-gray-500 mt-2">{v.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline */}
-      <section className="py-16 md:py-20 bg-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
-            <h2 className="section-title">Our Journey</h2>
-            <p className="section-subtitle">Key milestones in our growth story</p>
-          </motion.div>
-          <div className="relative">
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-primary-100" />
-            {milestones.map((m, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className="relative flex items-start gap-6 mb-8 last:mb-0">
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-xl flex-shrink-0 z-10 ring-4 ring-white">{m.icon}</div>
-                <div className="card p-4 flex-1">
-                  <span className="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded">{m.year}</span>
-                  <p className="text-gray-700 font-medium mt-2">{m.event}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team */}
-      <section className="py-16 md:py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
-            <h2 className="section-title">Meet the Team</h2>
-            <p className="section-subtitle">The people behind HomeFix</p>
-          </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map((member, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className="card p-6 text-center hover:shadow-lg transition-shadow group">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center text-4xl mx-auto group-hover:scale-110 transition-transform">
-                  {member.emoji}
-                </div>
-                <h3 className="font-semibold text-gray-900 mt-4">{member.name}</h3>
-                <p className="text-sm text-primary-600 font-medium">{member.role}</p>
-                <p className="text-xs text-gray-500 mt-2">{member.bio}</p>
               </motion.div>
             ))}
           </div>
