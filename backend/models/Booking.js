@@ -28,12 +28,21 @@ const bookingSchema = new mongoose.Schema({
   duration: { type: Number, default: 1 },
   description: { type: String },
 
-  // Address
+  // Address & Location Snapshot
   address: {
+    formattedAddress: { type: String },
     street: { type: String },
+    locality: { type: String },
     city: { type: String },
+    state: { type: String },
     pincode: { type: String },
     landmark: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
+  },
+  serviceLocation: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number] } // [longitude, latitude]
   },
 
   // ---- Pricing Model ----
@@ -93,5 +102,6 @@ bookingSchema.pre('save', async function (next) {
 
 // Index for preventing double bookings
 bookingSchema.index({ provider: 1, date: 1, time: 1 }, { unique: true, partialFilterExpression: { status: { $nin: ['cancelled', 'rejected'] } } });
+bookingSchema.index({ serviceLocation: '2dsphere' });
 
 module.exports = mongoose.model('Booking', bookingSchema);

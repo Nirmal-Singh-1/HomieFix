@@ -19,6 +19,23 @@ const Navbar = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
+    if (isAuthenticated) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await fetch('http://localhost:5000/api/notifications', { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) {
+            setNotifications(data.notifications || []);
+          }
+        } catch (e) {
+          console.error('Failed to fetch notifications', e);
+        }
+      };
+      fetchNotifications();
+    }
+  }, [isAuthenticated, location.pathname]);
+
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
@@ -46,8 +63,17 @@ const Navbar = () => {
     navigate('/');
   };
 
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAsRead = async (id, link) => {
+    try {
+      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+        method: 'PUT',
+        credentials: 'include'
+      });
+      setNotifications(prev => prev.map(n => n._id === id || n.id === id ? { ...n, read: true } : n));
+      if (link) navigate(link);
+    } catch (e) {
+      console.error('Failed to mark notification as read', e);
+    }
   };
 
   const isAdminOrProvider = user?.role === 'admin' || user?.role === 'provider';

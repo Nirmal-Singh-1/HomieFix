@@ -60,6 +60,11 @@ const ServiceCard = ({ service, index = 0 }) => {
         <span className="absolute top-3 left-3 badge-primary text-[11px]">
           {service.category}
         </span>
+        {service.distance !== undefined && (
+          <span className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+            📍 {service.distance} km away
+          </span>
+        )}
         {service.popular && (
           <span className="absolute top-3 right-3 badge bg-gradient-to-r from-secondary-500 to-orange-500 text-white text-[11px]">
             Popular

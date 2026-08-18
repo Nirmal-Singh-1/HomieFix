@@ -28,10 +28,16 @@ const userSchema = new mongoose.Schema({
   phoneVerified: { type: Boolean, default: false },
   profileImage: { type: String },
   address: {
+    formattedAddress: { type: String },
     street: { type: String },
+    locality: { type: String },
     city: { type: String },
+    state: { type: String },
+    country: { type: String, default: 'India' },
     pincode: { type: String },
     landmark: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
   },
   location: {
     type: { type: String, enum: ['Point'], default: 'Point' },

@@ -23,6 +23,7 @@ import ServiceDetail from './pages/customer/ServiceDetail';
 import Booking from './pages/customer/Booking';
 import MyBookings from './pages/customer/MyBookings';
 import CustomerProfile from './pages/customer/CustomerProfile';
+import MyAddresses from './pages/customer/MyAddresses';
 import RequestCustomService from './pages/customer/RequestCustomService';
 import MyCustomRequests from './pages/customer/MyCustomRequests';
 import CustomRequestDetail from './pages/customer/CustomRequestDetail';
@@ -221,6 +222,7 @@ function App() {
             <Route path="/booking" element={<ProtectedRoute allowedRoles={['customer']}><Booking /></ProtectedRoute>} />
             <Route path="/my-bookings" element={<ProtectedRoute allowedRoles={['customer']}><MyBookings /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute allowedRoles={['customer']}><CustomerProfile /></ProtectedRoute>} />
+            <Route path="/my-addresses" element={<ProtectedRoute allowedRoles={['customer']}><MyAddresses /></ProtectedRoute>} />
             
             {/* Custom Service Routes */}
             <Route path="/request-custom-service" element={<ProtectedRoute allowedRoles={['customer']}><RequestCustomService /></ProtectedRoute>} />

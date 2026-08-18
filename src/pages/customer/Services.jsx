@@ -4,28 +4,53 @@ import { motion } from 'framer-motion';
 import { FaSearch, FaSortAmountDown, FaThLarge, FaList } from 'react-icons/fa';
 import ServiceCard from '../../components/customer/ServiceCard';
 
+import LocationModal from '../../components/common/LocationModal';
+import { useAuth } from '../../context/AuthContext';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+
 const categories = ['Cleaning', 'Plumbing', 'Electrical', 'Painting', 'Carpentry', 'Appliances', 'Pest Control', 'Home Security', 'Handyman', 'Other'];
 import { CardSkeleton } from '../../components/common/LoadingSpinner';
 
 const Services = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
   const [filteredServices, setFilteredServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [sortBy, setSortBy] = useState('popular');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
   const perPage = 9;
+
+  useEffect(() => {
+    if (user?.address?.latitude && user?.address?.longitude) {
+      setUserLocation({
+        latitude: user.address.latitude,
+        longitude: user.address.longitude,
+        address: user.address.formattedAddress || `${user.address.city || ''}, ${user.address.state || ''}`,
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
-      const queryParams = new URLSearchParams();
-      if (selectedCategory) queryParams.append('category', selectedCategory);
-      if (search) queryParams.append('search', search);
-      if (sortBy) queryParams.append('sort', sortBy);
+      let endpoint = '';
+      if (userLocation?.latitude && userLocation?.longitude) {
+        endpoint = `http://localhost:5000/api/providers/nearby?lat=${userLocation.latitude}&lng=${userLocation.longitude}`;
+        if (selectedCategory) endpoint += `&category=${encodeURIComponent(selectedCategory)}`;
+        if (search) endpoint += `&search=${encodeURIComponent(search)}`;
+      } else {
+        const queryParams = new URLSearchParams();
+        if (selectedCategory) queryParams.append('category', selectedCategory);
+        if (search) queryParams.append('search', search);
+        if (sortBy) queryParams.append('sort', sortBy);
+        endpoint = `http://localhost:5000/api/services?${queryParams.toString()}`;
+      }
 
-      fetch(`http://localhost:5000/api/services?${queryParams.toString()}`)
+      fetch(endpoint)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.services) {
@@ -38,19 +63,36 @@ const Services = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [search, selectedCategory, sortBy]);
+  }, [search, selectedCategory, sortBy, userLocation]);
 
   const totalPages = Math.ceil(filteredServices.length / perPage);
   const paginated = filteredServices.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 sm:pb-0">
+      <LocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSelectLocation={(loc) => setUserLocation(loc)}
+        initialLocation={userLocation}
+      />
+
       {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Services</h1>
-            <p className="text-gray-500 text-sm mt-1">{filteredServices.length} services available</p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Services</h1>
+              <p className="text-gray-500 text-sm mt-1">{filteredServices.length} services available</p>
+            </div>
+
+            <button
+              onClick={() => setIsLocationModalOpen(true)}
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-primary-200 flex items-center gap-2 self-start sm:self-auto transition-colors"
+            >
+              <FaMapMarkerAlt className="text-primary-600" />
+              <span className="max-w-[200px] truncate">{userLocation?.address || 'Set Location for Nearby Feed'}</span>
+            </button>
           </motion.div>
 
           {/* Search & Sort */}

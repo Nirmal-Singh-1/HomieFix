@@ -12,6 +12,8 @@ const path = require('path');
 const connectDB = require('./db');
 const User = require('./models/User');
 const otpRoutes = require('./routes/otp');
+const locationRoutes = require('./routes/location');
+const addressRoutes = require('./routes/address');
 const Service = require('./models/Service');
 const Booking = require('./models/Booking');
 const CustomServiceRequest = require('./models/CustomServiceRequest');
@@ -55,6 +57,14 @@ app.post('/api/upload', requireAuth, upload.single('image'), (req, res) => {
 
 // OTP routes (WhatsApp via Twilio Verify)
 app.use('/api/otp', otpRoutes);
+
+// Location & Address routes
+app.use('/api/location', locationRoutes);
+app.use('/api/addresses', addressRoutes);
+app.get('/api/providers/nearby', (req, res, next) => {
+  req.url = '/nearby' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
+  locationRoutes(req, res, next);
+});
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -461,7 +471,8 @@ app.get('/api/bookings/:id', requireAuth, async (req, res) => {
 app.post('/api/bookings', requireAuth, async (req, res) => {
   try {
     const { serviceId, providerId, date, time, duration, paymentMethod,
-            address, city, pincode, landmark, description } = req.body;
+            address, city, pincode, landmark, description,
+            latitude, longitude, locality, state, formattedAddress } = req.body;
 
     if (!serviceId || !providerId || !date || !time) {
       return res.status(400).json({ success: false, message: 'Service, provider, date and time are required.' });
@@ -522,7 +533,21 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
       date, time,
       duration: duration || 1,
       description: description || '',
-      address: { street: address || '', city: city || '', pincode: pincode || '', landmark: landmark || '' },
+      address: {
+        formattedAddress: formattedAddress || address || '',
+        street: address || '',
+        locality: locality || '',
+        city: city || '',
+        state: state || '',
+        pincode: pincode || '',
+        landmark: landmark || '',
+        latitude: latitude ? Number(latitude) : undefined,
+        longitude: longitude ? Number(longitude) : undefined,
+      },
+      serviceLocation: (latitude !== undefined && longitude !== undefined) ? {
+        type: 'Point',
+        coordinates: [Number(longitude), Number(latitude)],
+      } : undefined,
       pricingType: pt,
       visitCharge, labourCharge, platformFee, total,
       initialPayment,
@@ -531,6 +556,19 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
       paymentStatus: paymentMethod === 'cash' ? 'pending' : 'partial',
       status: 'pending',
     });
+
+    // Notify provider of new booking
+    try {
+      await Notification.create({
+        userId: providerId,
+        title: 'New Booking Request',
+        message: `New booking request for ${service.name} from ${customer?.name || 'Customer'}.`,
+        type: 'NEW_BOOKING_REQUEST',
+        link: '/provider/bookings',
+      });
+    } catch (notifErr) {
+      console.error('[Booking Notification Error]', notifErr.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -548,15 +586,15 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
   }
 });
 
-// Update booking status
-app.put('/api/bookings/:id', requireAuth, async (req, res) => {
+// Update booking status helper
+const handleBookingStatusUpdate = async (req, res) => {
   try {
     const { status } = req.body;
     const validStatuses = ['pending', 'confirmed', 'upcoming', 'ongoing', 'quote_sent', 'quote_approved', 'completed', 'cancelled'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status.' });
     }
-    const booking = await Booking.findOne({ bookingId: req.params.id });
+    const booking = await Booking.findOne({ $or: [{ bookingId: req.params.id }, { _id: req.params.id.match(/^[0-9a-fA-F]{24}$/) ? req.params.id : null }] });
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
     if (req.user.role !== 'admin'
       && booking.customer.toString() !== req.user.id
@@ -568,12 +606,30 @@ app.put('/api/bookings/:id', requireAuth, async (req, res) => {
       booking.paymentStatus = 'refunded';
     }
     await booking.save();
+
+    // Send notification to customer on status update
+    try {
+      const recipientId = req.user.role === 'provider' ? booking.customer : booking.provider;
+      await Notification.create({
+        userId: recipientId,
+        title: `Booking ${status.toUpperCase()}`,
+        message: `Booking #${booking.bookingId} (${booking.serviceName}) has been updated to ${status}.`,
+        type: status === 'confirmed' ? 'SUCCESS' : status === 'cancelled' ? 'WARNING' : 'INFO',
+        link: req.user.role === 'provider' ? '/my-bookings' : '/provider/bookings',
+      });
+    } catch (notifErr) {
+      console.error('[Status Notification Error]', notifErr.message);
+    }
+
     res.json({ success: true, booking: { id: booking.bookingId, status: booking.status } });
   } catch (err) {
     console.error('[Update Booking Error]', err.message);
     res.status(500).json({ success: false, message: 'Failed to update booking.' });
   }
-});
+};
+
+app.put('/api/bookings/:id', requireAuth, handleBookingStatusUpdate);
+app.put('/api/bookings/:id/status', requireAuth, handleBookingStatusUpdate);
 
 // Provider submits a quote for inspection-type booking
 app.post('/api/bookings/:id/quote', requireAuth, requireRole('provider'), async (req, res) => {
@@ -804,44 +860,32 @@ app.post('/api/custom-requests', requireAuth, async (req, res) => {
       date, time, budget
     });
 
-    // Find eligible providers using MongoDB 2dsphere $near query
-    // serviceRadius is in km, $maxDistance requires meters
-    // Wait, since each provider has their own serviceRadius, we can't just use a single $maxDistance for all.
-    // Actually, we can query all providers within a reasonable absolute maximum (e.g., 50km) 
-    // and then filter by their individual serviceRadius in memory, or we can use aggregation pipeline.
-    // For simplicity, let's use the memory filter, but query using 2dsphere.
-    const providers = await User.find({
-      role: 'provider',
-      openToCustomRequests: true,
-      location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [location.longitude, location.latitude]
-          },
-          // Maximum search radius: 50km
-          $maxDistance: 50000 
+    // Find eligible providers and notify them safely
+    try {
+      const providers = await User.find({ role: 'provider' });
+      for (const provider of providers) {
+        let isEligible = true;
+        if (provider.location && provider.location.coordinates && provider.location.coordinates[0] !== 0) {
+          const distKm = getDistanceFromLatLonInKm(
+            location.latitude, location.longitude,
+            provider.location.coordinates[1], provider.location.coordinates[0]
+          );
+          if (distKm > (provider.serviceRadius || 50)) {
+            isEligible = false;
+          }
         }
-      }
-    });
-    
-    for (const provider of providers) {
-      if (provider.location && provider.location.coordinates) {
-        const distanceInMeters = getDistanceFromLatLonInKm(
-          location.latitude, location.longitude,
-          provider.location.coordinates[1], provider.location.coordinates[0]
-        ) * 1000;
-        
-        if (distanceInMeters <= (provider.serviceRadius || 10) * 1000) {
+        if (isEligible) {
           await Notification.create({
             userId: provider._id,
             title: 'New Custom Request',
             message: `A new custom request "${serviceTitle || 'Custom Service'}" is available nearby.`,
             type: 'CUSTOM_REQUEST',
-            link: `/provider/custom-requests/${request._id}`
+            link: '/provider/custom-requests'
           });
         }
       }
+    } catch (notifErr) {
+      console.error('[Notification Dispatch Warning]', notifErr.message);
     }
 
     res.status(201).json({ success: true, request });
@@ -854,7 +898,7 @@ app.post('/api/custom-requests', requireAuth, async (req, res) => {
 // 2. Get Custom Requests
 app.get('/api/custom-requests', requireAuth, async (req, res) => {
   try {
-    let requests;
+    let requests = [];
     if (req.user.role === 'customer') {
       requests = await CustomServiceRequest.find({ customerId: req.user.id })
         .populate('acceptedProviders', 'name profileImage')
@@ -863,41 +907,52 @@ app.get('/api/custom-requests', requireAuth, async (req, res) => {
         .sort({ createdAt: -1 });
     } else if (req.user.role === 'provider') {
       const provider = await User.findById(req.user.id);
-      if (!provider || !provider.openToCustomRequests || !provider.location) {
-        return res.json({ success: true, requests: [] });
-      }
       
-      const allPending = await CustomServiceRequest.find({
+      // Fetch all pending requests not declined by this provider
+      const pendingRaw = await CustomServiceRequest.find({
         status: 'PENDING',
-        declinedProviders: { $ne: req.user.id },
-        location: {
-          $near: {
-            $geometry: {
-              type: "Point",
-              coordinates: provider.location.coordinates
-            },
-            $maxDistance: (provider.serviceRadius || 10) * 1000
-          }
-        }
-      }).populate('customerId', 'name');
+        declinedProviders: { $ne: req.user.id }
+      }).populate('customerId', 'name').sort({ createdAt: -1 });
 
+      let filteredPending = pendingRaw;
+
+      // If provider has location coordinates, filter by operating radius (default 50km if radius not specified)
+      if (provider && provider.location && provider.location.coordinates && provider.location.coordinates[0] !== 0) {
+        const provLng = provider.location.coordinates[0];
+        const provLat = provider.location.coordinates[1];
+        const maxDistKm = provider.serviceRadius || 50;
+
+        filteredPending = pendingRaw.filter(r => {
+          if (r.location && r.location.coordinates && r.location.coordinates[0] && r.location.coordinates[1]) {
+            const dist = getDistanceFromLatLonInKm(provLat, provLng, r.location.coordinates[1], r.location.coordinates[0]);
+            return dist <= maxDistKm;
+          }
+          return true; // Include if location format varies
+        });
+      }
+
+      // Fetch requests where provider is accepted or selected
       const myAccepted = await CustomServiceRequest.find({
         $or: [
           { acceptedProviders: req.user.id },
           { selectedProviderId: req.user.id }
         ]
-      }).populate('customerId', 'name').populate('quoteId');
+      }).populate('customerId', 'name').populate('quoteId').sort({ createdAt: -1 });
 
-      requests = [...allPending, ...myAccepted].sort((a, b) => b.createdAt - a.createdAt);
+      requests = [...filteredPending, ...myAccepted];
+
       // Remove duplicates
       const uniqueIds = new Set();
       requests = requests.filter(r => {
-        if (!uniqueIds.has(r._id.toString())) {
-           uniqueIds.add(r._id.toString());
-           return true;
+        const idStr = r._id.toString();
+        if (!uniqueIds.has(idStr)) {
+          uniqueIds.add(idStr);
+          return true;
         }
         return false;
       });
+
+      requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     res.json({ success: true, requests });
@@ -1107,14 +1162,47 @@ app.put('/api/notifications/:id/read', requireAuth, async (req, res) => {
   }
 });
 
+// Provider settings toggle endpoint
+app.patch('/api/provider/settings', requireAuth, requireRole('provider'), async (req, res) => {
+  try {
+    const { openToCustomRequests, acceptingRequests, serviceRadius } = req.body;
+    const provider = await User.findById(req.user.id);
+    if (!provider) return res.status(404).json({ success: false, message: 'Provider not found.' });
+
+    const targetToggle = openToCustomRequests !== undefined ? openToCustomRequests : acceptingRequests;
+
+    if (targetToggle !== undefined) {
+      if (targetToggle && (!provider.location || !provider.location.coordinates || (provider.location.coordinates[0] === 0 && provider.location.coordinates[1] === 0))) {
+        return res.status(400).json({ success: false, message: 'Please add your service location before receiving service requests.' });
+      }
+      provider.openToCustomRequests = Boolean(targetToggle);
+    }
+
+    if (serviceRadius !== undefined) {
+      provider.serviceRadius = Number(serviceRadius);
+    }
+
+    await provider.save();
+    res.json({ success: true, message: 'Provider settings updated.', user: provider });
+  } catch (err) {
+    console.error('[Provider Settings Error]', err.message);
+    res.status(500).json({ success: false, message: 'Failed to update provider settings.' });
+  }
+});
+
 // Profile update (protected)
 app.put('/api/profile', requireAuth, async (req, res) => {
-  const updatedData = req.body;
-  const user = await User.findById(req.user.id);
-  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  Object.assign(user, updatedData);
-  await user.save();
-  res.json({ success: true, user, message: 'Profile updated successfully' });
+  try {
+    const updatedData = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    Object.assign(user, updatedData);
+    await user.save();
+    res.json({ success: true, user, message: 'Profile updated successfully' });
+  } catch (err) {
+    console.error('[Profile Update Error]', err.message);
+    res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
 });
 
 // Provider earnings (protected)

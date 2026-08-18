@@ -4,12 +4,14 @@ import { useForm } from 'react-hook-form';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaSave, FaClock, FaRupeeSign, FaStar } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import LocationModal from '../../components/common/LocationModal';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const ProviderProfile = () => {
   const { user, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   const [selectedServices, setSelectedServices] = useState(['Electrician']);
   const { register, handleSubmit, reset } = useForm({
@@ -25,14 +27,56 @@ const ProviderProfile = () => {
   const toggleDay = (d) => setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
   const toggleService = (s) => setSelectedServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
-  const onSubmit = (data) => {
-    updateUser(data);
-    setEditing(false);
-    toast.success('Profile updated!');
+  const handleLocationPicked = (loc) => {
+    reset({
+      ...user,
+      city: loc.city || loc.locality || loc.address,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    });
+    toast.success(`Location set to ${loc.city || loc.locality || 'Selected location'}`);
+  };
+
+  const onSubmit = async (data) => {
+    try {
+      if (data.latitude && data.longitude) {
+        await fetch('http://localhost:5000/api/location/provider', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            latitude: Number(data.latitude),
+            longitude: Number(data.longitude),
+            city: data.city,
+            serviceRadius: Number(data.serviceRadius),
+            openToCustomRequests: Boolean(data.openToCustomRequests)
+          })
+        });
+      }
+      await updateUser({
+        ...data,
+        openToCustomRequests: Boolean(data.openToCustomRequests),
+        serviceRadius: Number(data.serviceRadius)
+      });
+      setEditing(false);
+      toast.success('Profile updated!');
+    } catch (err) {
+      toast.error('Failed to update profile');
+    }
   };
 
   return (
     <div className="space-y-6">
+      <LocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSelectLocation={handleLocationPicked}
+        initialLocation={{
+          latitude: user?.address?.latitude || user?.location?.coordinates?.[1] || 29.3803,
+          longitude: user?.address?.longitude || user?.location?.coordinates?.[0] || 79.5126,
+          formattedAddress: user?.address?.formattedAddress || user?.city || ''
+        }}
+      />
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Profile</h1>
         <p className="text-gray-500 text-sm mt-1">Manage your provider profile and settings</p>
@@ -136,24 +180,106 @@ const ProviderProfile = () => {
             </div>
           </div>
 
-          {/* Custom Requests Settings */}
-          <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 mt-6">
-            <h4 className="font-bold text-purple-900 flex items-center gap-2 mb-3">✨ Custom Service Requests</h4>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Open to Custom Requests</p>
-                <p className="text-xs text-gray-500">Receive requests from customers for services not listed on your profile.</p>
+            {/* Custom Requests & Location Radius Settings */}
+            <div className="bg-purple-50 p-5 rounded-2xl border border-purple-100 mt-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h4 className="font-bold text-purple-900 flex items-center gap-2">📍 Provider Base Location & Service Radius</h4>
+                <button
+                  type="button"
+                  onClick={() => setIsLocationModalOpen(true)}
+                  className="px-3 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <FaMapMarkerAlt /> 📍 Select / Auto-Detect Location on Map
+                </button>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" {...register('openToCustomRequests')} disabled={!editing} className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-              </label>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Open to Custom Requests</p>
+                  <p className="text-xs text-gray-500">Receive custom request notifications within your operating service radius.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" {...register('openToCustomRequests')} disabled={!editing} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 block">Service Radius (km)</label>
+                  <input type="number" min="1" max="100" {...register('serviceRadius')} disabled={!editing} className="input-field disabled:bg-gray-50" />
+                  <p className="text-[11px] text-gray-500 mt-1">Customers within this radius will discover your services.</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 block">Operating City / Base Address</label>
+                  <input type="text" {...register('city')} disabled={!editing} className="input-field disabled:bg-gray-50" placeholder="e.g. Haldwani, Uttarakhand" />
+                </div>
+              </div>
+
+              {/* Current Saved Location Info Badge */}
+              <div className="p-3.5 bg-white/90 rounded-xl border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
+                    <span className="font-bold text-purple-950">Pinned Base Location: </span>
+                    <span className="font-semibold text-purple-900">{user?.address?.city || user?.city || 'Not set'}</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+                    Lat: {(user?.address?.latitude || user?.location?.coordinates?.[1] || 29.3803).toFixed(4)}, Lng: {(user?.address?.longitude || user?.location?.coordinates?.[0] || 79.5126).toFixed(4)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) return toast.error('GPS not supported by browser');
+                    toast.loading('Detecting current GPS location...', { id: 'gps-profile' });
+                    navigator.geolocation.getCurrentPosition(
+                      async (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        try {
+                          const res = await fetch('http://localhost:5000/api/location/reverse-geocode', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ latitude: lat, longitude: lng })
+                          });
+                          const data = await res.json();
+                          
+                          // Auto-persist location to backend MongoDB
+                          await fetch('http://localhost:5000/api/location/provider', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              latitude: lat,
+                              longitude: lng,
+                              city: data.city || data.locality || data.formattedAddress || 'Haldwani',
+                              serviceRadius: Number(user?.serviceRadius || 10)
+                            })
+                          });
+
+                          reset({
+                            ...user,
+                            city: data.city || data.locality || data.formattedAddress,
+                            latitude: lat,
+                            longitude: lng,
+                          });
+                          if (updateUser) updateUser({ ...user, city: data.city || data.locality, location: { coordinates: [lng, lat] } });
+                          toast.success(`📍 Auto-pinned location: ${data.city || data.locality || 'GPS Location'}`, { id: 'gps-profile' });
+                        } catch (e) {
+                          toast.success(`📍 Coordinates pinned: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, { id: 'gps-profile' });
+                        }
+                      },
+                      (err) => toast.error('Could not fetch GPS position', { id: 'gps-profile' })
+                    );
+                  }}
+                  className="px-3 py-2 bg-purple-100 text-purple-800 rounded-xl font-bold hover:bg-purple-200 transition flex items-center justify-center gap-1.5 self-start sm:self-center"
+                >
+                  ⚡ Auto-Detect & Pin GPS
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Service Radius (km)</label>
-              <input type="number" {...register('serviceRadius')} disabled={!editing} className="input-field max-w-[150px] disabled:bg-gray-50" />
-            </div>
-          </div>
 
           {editing && (
             <div className="flex gap-3 justify-end pt-2">
