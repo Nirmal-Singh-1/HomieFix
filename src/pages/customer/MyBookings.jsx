@@ -2,34 +2,60 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { bookings as allBookings } from '../../data/mockData';
 import BookingCard from '../../components/customer/BookingCard';
 import { ListSkeleton, EmptyState } from '../../components/common/LoadingSpinner';
 
-const tabs = ['upcoming', 'ongoing', 'completed', 'cancelled'];
+const tabs = ['all', 'upcoming', 'ongoing', 'completed', 'cancelled'];
 
 const MyBookings = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('upcoming');
+  const [activeTab, setActiveTab] = useState('all');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setBookings(allBookings);
-      setLoading(false);
-    }, 500);
+    const loadBookings = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch('http://localhost:5000/api/bookings', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          setBookings(data.bookings || []);
+        } else throw new Error();
+      } catch (err) {
+        console.error('Failed to load bookings:', err);
+        toast.error('Failed to load bookings');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBookings();
   }, []);
 
-  const filtered = bookings.filter(b => {
-    if (activeTab === 'upcoming') return b.status === 'upcoming' || b.status === 'confirmed';
-    return b.status === activeTab;
-  });
+  const filtered = activeTab === 'all'
+    ? bookings
+    : bookings.filter(b => {
+        if (activeTab === 'upcoming') return b.status === 'upcoming' || b.status === 'confirmed' || b.status === 'pending';
+        if (activeTab === 'ongoing') return b.status === 'ongoing' || b.status === 'quote_sent' || b.status === 'quote_approved';
+        return b.status === activeTab;
+      });
 
-  const handleCancel = (id) => {
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b));
-    toast.success('Booking cancelled successfully');
+  const handleCancel = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error();
+
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b));
+      toast.success('Booking cancelled successfully');
+    } catch (err) {
+      toast.error('Failed to cancel booking');
+    }
   };
 
   const handleReview = (id) => {
@@ -47,10 +73,13 @@ const MyBookings = () => {
         {/* Tabs */}
         <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
-            const count = bookings.filter(b => {
-              if (tab === 'upcoming') return b.status === 'upcoming' || b.status === 'confirmed';
-              return b.status === tab;
-            }).length;
+            const count = tab === 'all'
+              ? bookings.length
+              : bookings.filter(b => {
+                  if (tab === 'upcoming') return b.status === 'upcoming' || b.status === 'confirmed' || b.status === 'pending';
+                  if (tab === 'ongoing') return b.status === 'ongoing' || b.status === 'quote_sent' || b.status === 'quote_approved';
+                  return b.status === tab;
+                }).length;
             return (
               <button
                 key={tab}
@@ -74,7 +103,7 @@ const MyBookings = () => {
           ) : filtered.length > 0 ? (
             filtered.map((booking, i) => (
               <BookingCard
-                key={booking.id}
+                key={booking.id || booking._id}
                 booking={booking}
                 index={i}
                 onCancel={handleCancel}
@@ -85,7 +114,7 @@ const MyBookings = () => {
             <EmptyState
               icon="📋"
               title="No bookings here"
-              description={`You don't have any ${activeTab} bookings yet.`}
+              description={`You don't have any ${activeTab === 'all' ? '' : activeTab + ' '}bookings yet.`}
               actionText="Browse Services"
               onAction={() => navigate('/services')}
             />

@@ -2,6 +2,44 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaStar } from 'react-icons/fa';
 
+const PriceBadge = ({ service }) => {
+  const pt = service.priceType;
+  if (pt === 'fixed') {
+    return (
+      <div>
+        <span className="text-lg font-bold text-gray-900">₹{service.fixedPrice || service.price}</span>
+        <span className="text-xs text-gray-400 ml-1">fixed</span>
+      </div>
+    );
+  }
+  if (pt === 'inspection') {
+    return (
+      <div>
+        <span className="text-lg font-bold text-gray-900">₹{service.inspectionFee || service.price}</span>
+        <div className="text-[10px] text-amber-600 font-medium leading-tight">Visit fee · Quote after inspection</div>
+      </div>
+    );
+  }
+  if (pt === 'hourly') {
+    return (
+      <div>
+        <span className="text-lg font-bold text-gray-900">₹{service.visitFee || service.price}</span>
+        <span className="text-xs text-gray-400 ml-1">visit</span>
+        {service.hourlyRate && (
+          <span className="text-xs text-blue-600 font-semibold ml-1">+ ₹{service.hourlyRate}/hr</span>
+        )}
+      </div>
+    );
+  }
+  // Fallback
+  return (
+    <div>
+      <span className="text-lg font-bold text-gray-900">₹{service.price}</span>
+      <span className="text-xs text-gray-400 ml-1">onwards</span>
+    </div>
+  );
+};
+
 const ServiceCard = ({ service, index = 0 }) => {
   return (
     <motion.div
@@ -43,12 +81,7 @@ const ServiceCard = ({ service, index = 0 }) => {
         </div>
 
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-          <div>
-            <span className="text-lg font-bold text-gray-900">₹{service.price}</span>
-            <span className="text-xs text-gray-400 ml-1">
-              {service.priceType === 'hourly' ? '/hr' : ' onwards'}
-            </span>
-          </div>
+          <PriceBadge service={service} />
           <Link
             to={`/services/${service.id}`}
             className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-semibold

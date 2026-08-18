@@ -3,10 +3,20 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaSearch, FaStar, FaTimes } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { services as allServices, categories } from '../../data/mockData';
+const categories = [
+  { id: 'cleaning', name: 'Cleaning' },
+  { id: 'plumbing', name: 'Plumbing' },
+  { id: 'electrical', name: 'Electrical' },
+  { id: 'painting', name: 'Painting' },
+  { id: 'carpentry', name: 'Carpentry' },
+  { id: 'appliances', name: 'Appliances' },
+  { id: 'pest-control', name: 'Pest Control' },
+  { id: 'handyman', name: 'Handyman' },
+  { id: 'other', name: 'Other' }
+];
 
 const ManageServices = () => {
-  const [serviceList, setServiceList] = useState(allServices);
+  const [serviceList, setServiceList] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [editingService, setEditingService] = useState(null);

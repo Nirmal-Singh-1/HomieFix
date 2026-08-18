@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaSearch, FaSortAmountDown, FaThLarge, FaList } from 'react-icons/fa';
-import { services as allServices, categories } from '../../data/mockData';
 import ServiceCard from '../../components/customer/ServiceCard';
+
+const categories = ['Cleaning', 'Plumbing', 'Electrical', 'Painting', 'Carpentry', 'Appliances', 'Pest Control', 'Home Security', 'Handyman', 'Other'];
 import { CardSkeleton } from '../../components/common/LoadingSpinner';
 
 const Services = () => {
@@ -19,30 +20,21 @@ const Services = () => {
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
-      let results = [...allServices];
+      const queryParams = new URLSearchParams();
+      if (selectedCategory) queryParams.append('category', selectedCategory);
+      if (search) queryParams.append('search', search);
+      if (sortBy) queryParams.append('sort', sortBy);
 
-      if (selectedCategory) {
-        results = results.filter(s => s.category === selectedCategory);
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        results = results.filter(s =>
-          s.name.toLowerCase().includes(q) ||
-          s.category.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q)
-        );
-      }
-
-      switch (sortBy) {
-        case 'price-low': results.sort((a, b) => a.price - b.price); break;
-        case 'price-high': results.sort((a, b) => b.price - a.price); break;
-        case 'rating': results.sort((a, b) => b.rating - a.rating); break;
-        default: results.sort((a, b) => b.reviewCount - a.reviewCount);
-      }
-
-      setFilteredServices(results);
-      setLoading(false);
-      setCurrentPage(1);
+      fetch(`http://localhost:5000/api/services?${queryParams.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.services) {
+            setFilteredServices(data.services);
+            setCurrentPage(1);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }, 500);
 
     return () => clearTimeout(timer);

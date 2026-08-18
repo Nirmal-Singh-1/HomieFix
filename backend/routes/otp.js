@@ -99,6 +99,9 @@ router.post('/send', otpSendLimiter, async (req, res) => {
     if (err.code === 60203) {
       return res.status(429).json({ success: false, message: 'Max OTP attempts reached. Please try again later.' });
     }
+    if (err.code === 21608) {
+      return res.status(400).json({ success: false, message: 'This phone number is not verified in your Twilio Trial account.' });
+    }
 
     res.status(500).json({ success: false, message: 'OTP could not be sent. Please try again.' });
   }

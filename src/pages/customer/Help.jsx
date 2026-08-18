@@ -126,17 +126,17 @@ const Help = () => {
           <h2 className="section-title text-center mb-8">Still need help?</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { icon: <FaPhone className="text-primary-500" />, title: 'Call Us', desc: '+91 1800-123-4567', sub: 'Mon-Sat, 8AM-10PM' },
-              { icon: <FaEnvelope className="text-primary-500" />, title: 'Email Us', desc: 'support@homefix.in', sub: 'Response within 24 hours' },
-              { icon: <FaComments className="text-primary-500" />, title: 'Live Chat', desc: 'Chat with us', sub: 'Available 24/7' },
+              { icon: <FaPhone className="text-primary-500" />, title: 'Call Us', desc: '+91 7451086410', sub: 'Mon-Sat, 8AM-10PM', href: 'tel:+917451086410' },
+              { icon: <FaEnvelope className="text-primary-500" />, title: 'Email Us', desc: 'support@homefix.in', sub: 'Response within 24 hours', href: 'mailto:support@homefix.in' },
+              { icon: <FaComments className="text-primary-500" />, title: 'Visit Us', desc: 'Dwarahat, Uttarakhand', sub: 'Pin: 263653', href: '#' },
             ].map((item, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className="card p-6 text-center hover:shadow-lg transition-shadow cursor-pointer group">
+              <motion.a key={i} href={item.href} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="card p-6 text-center hover:shadow-lg transition-shadow cursor-pointer group block">
                 <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">{item.icon}</div>
                 <h3 className="font-semibold text-gray-900 mt-4">{item.title}</h3>
-                <p className="text-sm text-primary-600 font-medium mt-1">{item.desc}</p>
+                <p className="text-sm text-primary-600 font-bold mt-1">{item.desc}</p>
                 <p className="text-xs text-gray-400 mt-1">{item.sub}</p>
-              </motion.div>
+              </motion.a>
             ))}
           </div>
         </div>

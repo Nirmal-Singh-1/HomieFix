@@ -1,11 +1,22 @@
 import { motion } from 'framer-motion';
 import { FaUsers, FaUserTie, FaClipboardList, FaRupeeSign, FaArrowRight, FaChartLine } from 'react-icons/fa';
-import { adminStats } from '../../data/mockData';
 import StatsCard from '../../components/admin/StatsCard';
 import { Link } from 'react-router-dom';
 
+const adminStats = {
+  totalUsers: 0, totalProviders: 0, totalBookings: 0, totalRevenue: 0,
+  pendingProviders: 0, monthlyGrowth: 0, revenueGrowth: 0,
+  recentRevenue: [
+    { day: 'Mon', revenue: 0 }, { day: 'Tue', revenue: 0 },
+    { day: 'Wed', revenue: 0 }, { day: 'Thu', revenue: 0 },
+    { day: 'Fri', revenue: 0 }, { day: 'Sat', revenue: 0 },
+    { day: 'Sun', revenue: 0 },
+  ],
+  topServices: [],
+};
+
 const AdminDashboard = () => {
-  const maxRevenue = Math.max(...adminStats.recentRevenue.map(d => d.revenue));
+  const maxRevenue = Math.max(1, ...adminStats.recentRevenue.map(d => d.revenue));
 
   return (
     <div className="space-y-6">

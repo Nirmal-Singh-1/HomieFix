@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaSearch, FaBell, FaUser, FaBars, FaTimes, FaSignOutAlt, FaCalendarAlt, FaChevronDown, FaHome, FaClipboardList, FaCog, FaUserTie, FaChartBar } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { notifications as mockNotifications } from '../../data/mockData';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -13,7 +12,7 @@ const Navbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState([]);
   const profileRef = useRef(null);
   const notifRef = useRef(null);
 
@@ -105,9 +104,6 @@ const Navbar = () => {
                   <Link to="/register" className="hidden sm:inline-flex btn-primary text-sm !py-2.5 !px-5">
                     Register
                   </Link>
-                  <Link to="/register?role=provider" className="hidden lg:inline-flex btn-outline text-sm !py-2.5 !px-4">
-                    Become a Provider
-                  </Link>
                 </>
               ) : (
                 <>
@@ -177,11 +173,17 @@ const Navbar = () => {
                       onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
                       className="hidden sm:flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-gray-100 transition-colors"
                     >
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-100"
-                      />
+                      {user?.profileImage ? (
+                        <img
+                          src={user.profileImage}
+                          alt={user.name}
+                          className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-100"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center ring-2 ring-primary-100 text-primary-600 text-sm font-bold">
+                          {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
                       <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
                       <FaChevronDown className={`text-gray-400 text-[10px] transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                     </button>
@@ -205,6 +207,9 @@ const Navbar = () => {
                             </Link>
                             <Link to="/my-bookings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
                               <FaCalendarAlt className="text-gray-400" /> My Bookings
+                            </Link>
+                            <Link to="/my-custom-requests" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                              <span className="text-gray-400">✨</span> My Custom Requests
                             </Link>
                             <Link to="/register?role=provider" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
                               <FaUserTie className="text-gray-400" /> Become a Provider
@@ -281,7 +286,13 @@ const Navbar = () => {
                 {isAuthenticated ? (
                   <>
                     <div className="flex items-center gap-3 p-3 mb-3 bg-primary-50 rounded-xl">
-                      <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
+                          {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
                       <div>
                         <p className="font-semibold text-sm text-gray-900">{user.name}</p>
                         <p className="text-xs text-gray-500">{user.role}</p>

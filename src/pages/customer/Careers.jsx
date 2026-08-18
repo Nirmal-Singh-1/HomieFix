@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 
 const Careers = () => {
   const openPositions = [
-    { title: 'Full Stack Developer', dept: 'Engineering', location: 'Meerut / Remote', type: 'Full-time', urgent: true },
-    { title: 'UI/UX Designer', dept: 'Design', location: 'Meerut', type: 'Full-time', urgent: false },
-    { title: 'Operations Manager', dept: 'Operations', location: 'Delhi NCR', type: 'Full-time', urgent: true },
-    { title: 'Customer Support Lead', dept: 'Support', location: 'Meerut', type: 'Full-time', urgent: false },
+    { title: 'Full Stack Developer', dept: 'Engineering', location: 'Dwarahat / Remote', type: 'Full-time', urgent: true },
+    { title: 'UI/UX Designer', dept: 'Design', location: 'Dwarahat', type: 'Full-time', urgent: false },
+    { title: 'Operations Manager', dept: 'Operations', location: 'Dwarahat / Remote', type: 'Full-time', urgent: true },
+    { title: 'Customer Support Lead', dept: 'Support', location: 'Dwarahat', type: 'Full-time', urgent: false },
     { title: 'Marketing Specialist', dept: 'Marketing', location: 'Remote', type: 'Full-time', urgent: false },
-    { title: 'Data Analyst', dept: 'Analytics', location: 'Meerut / Remote', type: 'Full-time', urgent: true },
+    { title: 'Data Analyst', dept: 'Analytics', location: 'Dwarahat / Remote', type: 'Full-time', urgent: true },
   ];
 
   const perks = [

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaWallet, FaArrowDown, FaArrowUp, FaUniversity } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { earningsData } from '../../data/mockData';
 import EarningCard from '../../components/provider/EarningCard';
 
 const ProviderEarnings = () => {
@@ -12,10 +11,23 @@ const ProviderEarnings = () => {
   const [chartView, setChartView] = useState('weekly');
 
   useEffect(() => {
-    setTimeout(() => {
-      setData(earningsData);
-      setLoading(false);
-    }, 500);
+    fetch('http://localhost:5000/api/providers/me/earnings', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.earnings) {
+          setData(data.earnings);
+        } else {
+          throw new Error('Failed');
+        }
+      })
+      .catch(() => {
+        setData({
+          totalEarnings: 0, platformFees: 0, netEarnings: 0, availableBalance: 0,
+          weekly: [], monthly: [], transactions: [],
+          bankDetails: { accountNumber: 'Not set', bankName: 'Not set', ifsc: '' }
+        });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleWithdraw = () => {

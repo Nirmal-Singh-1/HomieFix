@@ -22,12 +22,17 @@ import ServiceDetail from './pages/customer/ServiceDetail';
 import Booking from './pages/customer/Booking';
 import MyBookings from './pages/customer/MyBookings';
 import CustomerProfile from './pages/customer/CustomerProfile';
+import RequestCustomService from './pages/customer/RequestCustomService';
+import MyCustomRequests from './pages/customer/MyCustomRequests';
+import CustomRequestDetail from './pages/customer/CustomRequestDetail';
 
 // Provider Pages
 import ProviderDashboard from './pages/provider/ProviderDashboard';
 import ProviderEarnings from './pages/provider/ProviderEarnings';
 import ProviderBookings from './pages/provider/ProviderBookings';
 import ProviderProfile from './pages/provider/ProviderProfile';
+import AddService from './pages/provider/AddService';
+import ProviderCustomRequests from './pages/provider/ProviderCustomRequests';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -66,6 +71,7 @@ const PageTransition = ({ children }) => {
 // Provider Layout
 const providerLinks = [
   { to: '/provider', label: 'Dashboard', icon: FaChartBar, end: true },
+  { to: '/provider/custom-requests', label: 'Custom Requests', icon: FaStar, badge: 'New' },
   { to: '/provider/bookings', label: 'Bookings', icon: FaClipboardList, badge: '2' },
   { to: '/provider/earnings', label: 'Earnings', icon: FaMoneyBillWave },
   { to: '/provider/profile', label: 'Profile', icon: FaUser },
@@ -178,12 +184,14 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           {/* Provider Routes */}
-          <Route path="/provider" element={<ProtectedRoute allowedRoles={['provider']}><ProviderLayout /></ProtectedRoute>}>
-            <Route index element={<ProviderDashboard />} />
-            <Route path="bookings" element={<ProviderBookings />} />
-            <Route path="earnings" element={<ProviderEarnings />} />
-            <Route path="profile" element={<ProviderProfile />} />
-          </Route>
+            <Route path="/provider" element={<ProtectedRoute allowedRoles={['provider']}><ProviderLayout /></ProtectedRoute>}>
+              <Route index element={<ProviderDashboard />} />
+              <Route path="bookings" element={<ProviderBookings />} />
+              <Route path="earnings" element={<ProviderEarnings />} />
+              <Route path="profile" element={<ProviderProfile />} />
+              <Route path="add-service" element={<AddService />} />
+              <Route path="custom-requests" element={<ProviderCustomRequests />} />
+            </Route>
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
@@ -211,6 +219,11 @@ function App() {
             <Route path="/booking" element={<ProtectedRoute allowedRoles={['customer']}><Booking /></ProtectedRoute>} />
             <Route path="/my-bookings" element={<ProtectedRoute allowedRoles={['customer']}><MyBookings /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute allowedRoles={['customer']}><CustomerProfile /></ProtectedRoute>} />
+            
+            {/* Custom Service Routes */}
+            <Route path="/request-custom-service" element={<ProtectedRoute allowedRoles={['customer']}><RequestCustomService /></ProtectedRoute>} />
+            <Route path="/my-custom-requests" element={<ProtectedRoute allowedRoles={['customer']}><MyCustomRequests /></ProtectedRoute>} />
+            <Route path="/custom-requests/:id" element={<ProtectedRoute allowedRoles={['customer']}><CustomRequestDetail /></ProtectedRoute>} />
           </Route>
 
           {/* 404 */}

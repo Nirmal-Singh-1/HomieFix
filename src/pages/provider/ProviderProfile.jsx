@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCamera, FaSave, FaClock, FaRupeeSign, FaStar } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { reviews } from '../../data/mockData';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -14,7 +13,11 @@ const ProviderProfile = () => {
   const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   const [selectedServices, setSelectedServices] = useState(['Electrician']);
   const { register, handleSubmit, reset } = useForm({
-    defaultValues: { name: user?.name, email: user?.email, phone: user?.phone, hourlyRate: '300', experience: '8', city: user?.city },
+    defaultValues: { 
+      name: user?.name, email: user?.email, phone: user?.phone, hourlyRate: '300', experience: '8', city: user?.city,
+      openToCustomRequests: user?.openToCustomRequests || false,
+      serviceRadius: user?.serviceRadius || 10
+    },
   });
 
   const serviceOptions = ['Electrician', 'Plumber', 'Cleaning', 'Carpenter', 'AC Service', 'Painter', 'Appliance Repair'];
@@ -41,7 +44,9 @@ const ProviderProfile = () => {
         <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5" />
         <div className="relative flex flex-col sm:flex-row items-center gap-5">
           <div className="relative group">
-            <img src={user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} alt="" className="w-24 h-24 rounded-2xl object-cover ring-4 ring-white/30" />
+            <div className="w-24 h-24 rounded-2xl bg-white/20 flex items-center justify-center text-4xl text-white font-bold ring-4 ring-white/30">
+              {user?.name?.charAt(0)?.toUpperCase() || '?'}
+            </div>
             <button className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <FaCamera className="text-white text-lg" />
             </button>
@@ -131,6 +136,25 @@ const ProviderProfile = () => {
             </div>
           </div>
 
+          {/* Custom Requests Settings */}
+          <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 mt-6">
+            <h4 className="font-bold text-purple-900 flex items-center gap-2 mb-3">✨ Custom Service Requests</h4>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Open to Custom Requests</p>
+                <p className="text-xs text-gray-500">Receive requests from customers for services not listed on your profile.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" {...register('openToCustomRequests')} disabled={!editing} className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Service Radius (km)</label>
+              <input type="number" {...register('serviceRadius')} disabled={!editing} className="input-field max-w-[150px] disabled:bg-gray-50" />
+            </div>
+          </div>
+
           {editing && (
             <div className="flex gap-3 justify-end pt-2">
               <button type="button" onClick={() => { setEditing(false); reset(); }} className="btn-ghost">Cancel</button>
@@ -142,25 +166,8 @@ const ProviderProfile = () => {
 
       {/* Reviews */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card p-6">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><FaStar className="text-secondary-500" /> Recent Reviews</h3>
-        <div className="space-y-4">
-          {reviews.slice(0, 3).map((r) => (
-            <div key={r.id} className="flex items-start gap-3 pb-4 border-b border-gray-50 last:border-0 last:pb-0">
-              <img src={r.customerAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold">{r.customerName}</h4>
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <FaStar key={i} className={`text-xs ${i < r.rating ? 'text-secondary-500' : 'text-gray-200'}`} />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">{r.comment}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><FaStar className="text-secondary-500" /> Reviews</h3>
+        <p className="text-sm text-gray-500 text-center py-8">No reviews yet. Reviews will appear here once customers rate your service.</p>
       </motion.div>
     </div>
   );

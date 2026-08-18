@@ -2,17 +2,38 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaSearch, FaMapMarkerAlt, FaArrowRight, FaShieldAlt, FaLock, FaHeadset, FaStar, FaBolt, FaFaucet, FaBroom, FaHammer, FaSnowflake, FaPaintRoller, FaWrench, FaBug } from 'react-icons/fa';
-import { categories, services } from '../../data/mockData';
 import ServiceCard from '../../components/customer/ServiceCard';
+import { useEffect } from 'react';
+
+const categories = [
+  { id: 'cleaning', name: 'Cleaning', icon: 'FaBroom', desc: 'Home & Office' },
+  { id: 'plumbing', name: 'Plumbing', icon: 'FaFaucet', desc: 'Repairs & Fitting' },
+  { id: 'electrical', name: 'Electrical', icon: 'FaBolt', desc: 'Wiring & Fixes' },
+  { id: 'painting', name: 'Painting', icon: 'FaPaintRoller', desc: 'Wall & Texture' },
+  { id: 'carpentry', name: 'Carpentry', icon: 'FaHammer', desc: 'Woodwork' },
+  { id: 'appliances', name: 'Appliances', icon: 'FaSnowflake', desc: 'AC & Fridge' },
+  { id: 'pest-control', name: 'Pest Control', icon: 'FaBug', desc: 'Termite & Ants' },
+  { id: 'handyman', name: 'Handyman', icon: 'FaWrench', desc: 'General Repairs' }
+];
 
 const iconMap = { FaBolt, FaFaucet, FaBroom, FaHammer, FaSnowflake, FaPaintRoller, FaWrench, FaBug };
 
 const Home = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState('Meerut');
+  const [selectedCity, setSelectedCity] = useState('Dwarahat, Uttarakhand');
+  const [services, setServices] = useState([]);
 
-  const popularServices = services.filter(s => s.popular);
+  useEffect(() => {
+    fetch('http://localhost:5000/api/services')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.services) setServices(data.services);
+      })
+      .catch(console.error);
+  }, []);
+
+  const popularServices = services.slice(0, 4); // Show top 4 services
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -80,6 +101,20 @@ const Home = () => {
               </div>
             </form>
 
+            {/* Custom Service Request Banner */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="mt-8 max-w-2xl mx-auto bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md border border-white/20 rounded-2xl p-5 sm:p-6 text-left flex flex-col sm:flex-row items-center justify-between gap-4"
+            >
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">✨ Need a Customized Service?</h3>
+                <p className="text-blue-100 text-sm mt-1">Can't find what you're looking for? Tell us what you need and we'll find the right provider.</p>
+              </div>
+              <Link to="/request-custom-service" className="bg-white text-primary-600 px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition shadow-lg whitespace-nowrap flex-shrink-0">
+                Request Custom Service
+              </Link>
+            </motion.div>
+
             {/* Location */}
             <div className="flex items-center justify-center gap-2 mt-4 text-blue-200 text-sm">
               <FaMapMarkerAlt className="text-secondary-400" />
@@ -89,21 +124,7 @@ const Home = () => {
               </button>
             </div>
 
-            {/* CTA */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="mt-8"
-            >
-              <Link
-                to="/register?role=provider"
-                className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white
-                         bg-white/10 hover:bg-white/20 px-5 py-2.5 rounded-xl transition-all duration-200"
-              >
-                Want to earn money? Become a Service Provider <FaArrowRight className="text-xs" />
-              </Link>
-            </motion.div>
+
           </motion.div>
         </div>
       </section>

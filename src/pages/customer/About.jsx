@@ -17,7 +17,7 @@ const About = () => {
   ];
 
   const milestones = [
-    { year: '2023', event: 'HomeFix founded in Meerut, UP', icon: '🚀' },
+    { year: '2023', event: 'HomeFix founded in Dwarahat, Uttarakhand', icon: '🚀' },
     { year: '2024', event: 'Expanded to 5 cities across North India', icon: '🌍' },
     { year: '2025', event: 'Crossed 10,000+ happy customers', icon: '🎉' },
     { year: '2026', event: 'Launched provider app & premium services', icon: '📱' },

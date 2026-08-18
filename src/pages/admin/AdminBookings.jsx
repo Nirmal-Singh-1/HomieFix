@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaSearch, FaEye, FaTimes, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUser, FaUserTie, FaRupeeSign, FaClipboardList } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { mockApi } from '../../data/mockData';
 import StatsCard from '../../components/admin/StatsCard';
 
 const tabs = ['all', 'confirmed', 'upcoming', 'ongoing', 'completed', 'cancelled'];
@@ -24,8 +23,11 @@ const AdminBookings = () => {
   useEffect(() => {
     const loadBookings = async () => {
       try {
-        const response = await mockApi.getBookings();
-        setBookingList(response.bookings);
+        const res = await fetch('http://localhost:5000/api/bookings', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          setBookingList(data.bookings || []);
+        } else throw new Error();
       } catch (e) {
         toast.error('Failed to load bookings from server');
       }
@@ -51,7 +53,15 @@ const AdminBookings = () => {
 
   const handleStatusUpdate = async (id, newStatus) => {
     try {
-      await mockApi.updateBookingStatus(id, newStatus);
+      const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error();
+
       setBookingList(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
       setSelectedBooking(prev => prev ? { ...prev, status: newStatus } : null);
       toast.success(`Booking #${id} updated to ${newStatus}`);

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch, FaEye, FaBan, FaTrash, FaUserCheck } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { users } from '../../data/mockData';
+// TODO: Replace with API call to fetch users from backend
 
 const ManageUsers = () => {
-  const [userList, setUserList] = useState(users);
+  const [userList, setUserList] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 

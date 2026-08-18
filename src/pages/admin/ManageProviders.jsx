@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaSearch, FaEye, FaCheck, FaTimes, FaBan, FaStar, FaPhone, FaEnvelope } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { providers as allProviders } from '../../data/mockData';
+// TODO: Replace with API call to fetch providers from backend
 
 const ManageProviders = () => {
-  const [providerList, setProviderList] = useState(allProviders);
+  const [providerList, setProviderList] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
