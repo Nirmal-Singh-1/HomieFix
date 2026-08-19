@@ -66,8 +66,8 @@ const Booking = () => {
   }
 
   const providerName = service.provider?.name || 'Verified Provider';
-  const providerId = providerIdParam || service.provider?.id || '';
-  const pt = service.priceType; // 'fixed', 'inspection', 'hourly'
+  const providerId = providerIdParam || service.provider?.id || service.provider?._id || (typeof service.provider === 'string' ? service.provider : '');
+  const pt = service.priceType || service.pricingType; // 'fixed', 'inspection', 'hourly'
 
   // Compute pricing
   let visitCharge = 0, labourCharge = 0, platformFee = 0, total = 0, initialPayment = 0;

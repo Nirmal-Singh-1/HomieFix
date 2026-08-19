@@ -52,6 +52,7 @@ const ProviderCustomRequests = () => {
   };
 
   const handleAction = async (id, action) => {
+    setRequests(prev => prev.filter(r => r._id !== id));
     try {
       const res = await fetch(`http://localhost:5000/api/custom-requests/${id}/${action}`, {
         method: 'POST',
@@ -59,13 +60,15 @@ const ProviderCustomRequests = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(action === 'accept' ? 'Request accepted!' : 'Request hidden.');
+        toast.success(action === 'accept' ? 'Request accepted!' : 'Request ignored & deleted');
         fetchRequests();
       } else {
         toast.error(data.message);
+        fetchRequests();
       }
     } catch (err) {
       toast.error(`Failed to ${action} request`);
+      fetchRequests();
     }
   };
 

@@ -94,7 +94,7 @@ const AddService = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
                 <select name="category" required value={formData.category} onChange={handleChange} className="input-field">
                   <option value="">Select a category</option>
-                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>

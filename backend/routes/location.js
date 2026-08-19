@@ -167,48 +167,44 @@ router.post('/current', requireAuth, async (req, res) => {
   }
 });
 
-// 4. GET /api/providers/nearby - Geospatial search using $geoNear
+// 4. GET /api/providers/nearby - Geospatial search using $geoNear with fallback for all services
 router.get('/nearby', async (req, res) => {
   try {
     const { lat, lng, latitude, longitude, maxDistance, category, search, serviceId } = req.query;
 
     const customerLat = Number(lat !== undefined ? lat : latitude);
     const customerLng = Number(lng !== undefined ? lng : longitude);
-    const maxKm = Number(maxDistance) || 50;
+    const maxKm = Number(maxDistance) || 100;
 
-    if (isNaN(customerLat) || isNaN(customerLng)) {
-      return res.status(400).json({ success: false, message: 'Valid latitude and longitude required.' });
+    let providers = [];
+    if (!isNaN(customerLat) && !isNaN(customerLng)) {
+      try {
+        const pipeline = [
+          {
+            $geoNear: {
+              near: { type: 'Point', coordinates: [customerLng, customerLat] },
+              distanceField: 'distanceInMeters',
+              spherical: true,
+              query: { role: 'provider' },
+            },
+          },
+          {
+            $addFields: {
+              distanceInKm: { $round: [{ $divide: ['$distanceInMeters', 1000] }, 1] },
+            },
+          },
+        ];
+        providers = await User.aggregate(pipeline);
+      } catch (geoErr) {
+        console.warn('[geoNear warning]', geoErr.message);
+      }
     }
 
-    // Pipeline starting with $geoNear
-    const pipeline = [
-      {
-        $geoNear: {
-          near: { type: 'Point', coordinates: [customerLng, customerLat] },
-          distanceField: 'distanceInMeters',
-          spherical: true,
-          query: { role: 'provider' },
-        },
-      },
-      {
-        $addFields: {
-          distanceInKm: { $round: [{ $divide: ['$distanceInMeters', 1000] }, 1] },
-        },
-      },
-      {
-        $match: {
-          // Provider serviceRadius eligibility check!
-          $expr: { $lte: ['$distanceInKm', { $ifNull: ['$serviceRadius', 10] }] },
-          distanceInKm: { $lte: maxKm },
-        },
-      },
-    ];
+    const providerMap = new Map();
+    providers.forEach(p => providerMap.set(p._id.toString(), p));
 
-    let providers = await User.aggregate(pipeline);
-
-    const providerIds = providers.map(p => p._id);
-    let serviceQuery = { provider: { $in: providerIds } };
-
+    // Build service query
+    let serviceQuery = {};
     if (serviceId) {
       serviceQuery._id = serviceId;
     }
@@ -220,51 +216,61 @@ router.get('/nearby', async (req, res) => {
       serviceQuery.$or = [{ name: q }, { category: q }, { description: q }];
     }
 
-    const services = await Service.find(serviceQuery).populate('provider', 'name email phone profileImage');
+    const services = await Service.find(serviceQuery).populate('provider', 'name email phone profileImage location address serviceRadius');
 
     const nearbyServices = [];
-    const providerMap = new Map();
-    providers.forEach(p => providerMap.set(p._id.toString(), p));
+    const otherServices = [];
 
     services.forEach(s => {
+      if (!s.provider) return;
       const providerIdStr = (s.provider._id || s.provider).toString();
       const providerData = providerMap.get(providerIdStr);
 
-      if (providerData) {
-        nearbyServices.push({
-          id: s._id.toString(),
-          name: s.name,
-          category: s.category,
-          description: s.description || '',
-          price: s.basePrice,
-          pricingType: s.pricingType,
-          fixedPrice: s.fixedPrice || null,
-          inspectionFee: s.inspectionFee || null,
-          visitFee: s.visitFee || null,
-          hourlyRate: s.hourlyRate || null,
-          image: s.image || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop',
-          provider: {
-            id: providerIdStr,
-            name: s.provider.name || providerData.name,
-            phone: s.provider.phone || providerData.phone,
-            profileImage: providerData.profileImage || s.provider.profileImage || '',
-            serviceRadius: providerData.serviceRadius || 10,
-            address: providerData.address,
-            location: providerData.location,
-          },
-          distance: providerData.distanceInKm,
-          rating: 4.8,
-          reviewCount: 12,
-        });
+      const serviceObj = {
+        id: s._id.toString(),
+        name: s.name,
+        category: s.category,
+        description: s.description || '',
+        price: s.basePrice,
+        pricingType: s.pricingType,
+        fixedPrice: s.fixedPrice || null,
+        inspectionFee: s.inspectionFee || null,
+        visitFee: s.visitFee || null,
+        hourlyRate: s.hourlyRate || null,
+        image: s.image || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop',
+        provider: {
+          id: providerIdStr,
+          name: s.provider.name || 'Provider',
+          phone: s.provider.phone || '',
+          profileImage: s.provider.profileImage || '',
+          serviceRadius: s.provider.serviceRadius || 10,
+          address: s.provider.address,
+          location: s.provider.location,
+        },
+        rating: 4.8,
+        reviewCount: 12,
+      };
+
+      if (providerData && providerData.distanceInKm !== undefined) {
+        serviceObj.distance = providerData.distanceInKm;
+        nearbyServices.push(serviceObj);
+      } else {
+        serviceObj.distance = null;
+        otherServices.push(serviceObj);
       }
     });
 
+    // Sort nearby services by distance first
     nearbyServices.sort((a, b) => a.distance - b.distance);
+
+    // Combine nearby services first, then other available services
+    const combinedServices = [...nearbyServices, ...otherServices];
 
     res.json({
       success: true,
-      count: nearbyServices.length,
-      services: nearbyServices,
+      count: combinedServices.length,
+      nearbyCount: nearbyServices.length,
+      services: combinedServices,
       providers: providers.map(p => ({
         id: p._id.toString(),
         name: p.name,

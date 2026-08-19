@@ -474,35 +474,40 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
             address, city, pincode, landmark, description,
             latitude, longitude, locality, state, formattedAddress } = req.body;
 
-    if (!serviceId || !providerId || !date || !time) {
-      return res.status(400).json({ success: false, message: 'Service, provider, date and time are required.' });
+    if (!serviceId || !date || !time) {
+      return res.status(400).json({ success: false, message: 'Service, date and time are required.' });
     }
 
     const service = await Service.findById(serviceId);
     if (!service) return res.status(404).json({ success: false, message: 'Service not found.' });
 
+    const finalProviderId = providerId || (service.provider?._id || service.provider)?.toString();
+    if (!finalProviderId) {
+      return res.status(400).json({ success: false, message: 'Provider ID is required.' });
+    }
+
     const customer = await User.findById(req.user.id).select('name phone');
-    const provider = await User.findById(providerId).select('name');
+    const provider = await User.findById(finalProviderId).select('name');
     if (!provider) return res.status(404).json({ success: false, message: 'Provider not found.' });
 
     // Compute pricing based on model
     let visitCharge = 0, labourCharge = 0, platformFee = 0, total = 0, initialPayment = 0;
-    const pt = service.pricingType;
+    const pt = service.pricingType || 'fixed';
 
     if (pt === 'fixed') {
-      labourCharge = service.fixedPrice;
+      labourCharge = Number(service.fixedPrice || service.basePrice || 0);
       platformFee = Math.round(labourCharge * 0.03);
       total = labourCharge + platformFee;
       initialPayment = total;
     } else if (pt === 'inspection') {
-      visitCharge = service.inspectionFee;
+      visitCharge = Number(service.inspectionFee || service.basePrice || 0);
       platformFee = Math.round(visitCharge * 0.03);
       total = visitCharge + platformFee;
       initialPayment = total;
     } else if (pt === 'hourly') {
-      visitCharge = service.visitFee;
-      const hrs = duration || 1;
-      labourCharge = service.hourlyRate * hrs;
+      visitCharge = Number(service.visitFee || service.basePrice || 0);
+      const hrs = Number(duration) || 1;
+      labourCharge = Number(service.hourlyRate || 0) * hrs;
       platformFee = Math.round((visitCharge + labourCharge) * 0.03);
       total = visitCharge + labourCharge + platformFee;
       initialPayment = visitCharge + Math.round(visitCharge * 0.03);
@@ -510,7 +515,7 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
 
     // Double Booking Prevention Check
     const conflictingBooking = await Booking.findOne({
-      provider: providerId,
+      provider: finalProviderId,
       date,
       time,
       status: { $nin: ['cancelled', 'rejected'] }
@@ -528,10 +533,10 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
       customer: req.user.id,
       customerName: customer?.name || 'Customer',
       customerPhone: customer?.phone || '',
-      provider: providerId,
+      provider: finalProviderId,
       providerName: provider.name,
       date, time,
-      duration: duration || 1,
+      duration: Number(duration) || 1,
       description: description || '',
       address: {
         formattedAddress: formattedAddress || address || '',
@@ -551,7 +556,7 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
       pricingType: pt,
       visitCharge, labourCharge, platformFee, total,
       initialPayment,
-      hourlyRate: pt === 'hourly' ? service.hourlyRate : undefined,
+      hourlyRate: pt === 'hourly' ? (service.hourlyRate || 0) : undefined,
       paymentMethod: paymentMethod || 'cash',
       paymentStatus: paymentMethod === 'cash' ? 'pending' : 'partial',
       status: 'pending',
@@ -560,7 +565,7 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
     // Notify provider of new booking
     try {
       await Notification.create({
-        userId: providerId,
+        userId: finalProviderId,
         title: 'New Booking Request',
         message: `New booking request for ${service.name} from ${customer?.name || 'Customer'}.`,
         type: 'NEW_BOOKING_REQUEST',
@@ -582,7 +587,7 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error('[Create Booking Error]', err.message);
-    res.status(500).json({ success: false, message: 'Failed to create booking.' });
+    res.status(500).json({ success: false, message: err.message || 'Failed to create booking.' });
   }
 });
 

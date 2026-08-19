@@ -66,7 +66,14 @@ const ProviderDashboard = () => {
       const res = await fetch('http://localhost:5000/api/custom-requests', { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
-        setPendingCustomRequests(data.requests || []);
+        const myId = (user?.id || user?._id)?.toString();
+        const unhandled = (data.requests || []).filter(r => {
+          const isAccepted = (r.acceptedProviders && r.acceptedProviders.some(p => (p._id || p)?.toString() === myId)) || 
+                             (r.selectedProviderId && (r.selectedProviderId._id || r.selectedProviderId)?.toString() === myId);
+          const isDeclined = r.declinedProviders && r.declinedProviders.some(p => (p._id || p)?.toString() === myId);
+          return (r.status === 'PENDING' || r.status === 'pending') && !isAccepted && !isDeclined;
+        });
+        setPendingCustomRequests(unhandled);
       }
     } catch (e) {
       console.error('Failed to load custom requests', e);
@@ -97,7 +104,7 @@ const ProviderDashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [user]);
 
   // Handle Availability Toggle
   const handleToggleAvailability = async (e) => {
@@ -207,6 +214,7 @@ const ProviderDashboard = () => {
 
   // Handle Accept / Reject for Standard Booking
   const handleAcceptBooking = async (id) => {
+    setPendingBookings(prev => prev.filter(b => b.id !== id));
     try {
       const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
         method: 'PUT',
@@ -221,10 +229,12 @@ const ProviderDashboard = () => {
       } else throw new Error(data.message);
     } catch (e) {
       toast.error('Failed to accept booking');
+      loadDashboardData();
     }
   };
 
   const handleRejectBooking = async (id) => {
+    setPendingBookings(prev => prev.filter(b => b.id !== id));
     try {
       const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
         method: 'PUT',
@@ -234,16 +244,18 @@ const ProviderDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('Booking declined');
+        toast.success('Booking declined and deleted');
         loadDashboardData();
       } else throw new Error(data.message);
     } catch (e) {
       toast.error('Failed to decline booking');
+      loadDashboardData();
     }
   };
 
   // Handle Accept / Decline for Custom Request
   const handleCustomRequestAction = async (id, action) => {
+    setPendingCustomRequests(prev => prev.filter(r => r._id !== id));
     try {
       const res = await fetch(`http://localhost:5000/api/custom-requests/${id}/${action}`, {
         method: 'POST',
@@ -255,9 +267,11 @@ const ProviderDashboard = () => {
         loadDashboardData();
       } else {
         toast.error(data.message);
+        loadDashboardData();
       }
     } catch (e) {
       toast.error(`Failed to ${action} custom request`);
+      loadDashboardData();
     }
   };
 

@@ -4,12 +4,13 @@ import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaCheck, FaTimes, FaPlay, FaChe
 import toast from 'react-hot-toast';
 import { EmptyState } from '../../components/common/LoadingSpinner';
 
-const tabs = ['all', 'upcoming', 'ongoing', 'completed', 'cancelled'];
+const tabs = ['all', 'pending', 'upcoming', 'ongoing', 'completed', 'cancelled'];
 
 const statusColors = {
+  pending: 'bg-amber-100 text-amber-800',
   upcoming: 'bg-blue-100 text-blue-700',
   confirmed: 'bg-indigo-100 text-indigo-700',
-  ongoing: 'bg-amber-100 text-amber-700',
+  ongoing: 'bg-purple-100 text-purple-700',
   quote_sent: 'bg-purple-100 text-purple-700',
   quote_approved: 'bg-indigo-100 text-indigo-700',
   completed: 'bg-green-100 text-green-700',
@@ -45,12 +46,14 @@ const ProviderBookings = () => {
   const filtered = activeTab === 'all'
     ? bookingList
     : bookingList.filter(b => {
-        if (activeTab === 'upcoming') return b.status === 'upcoming' || b.status === 'confirmed' || b.status === 'pending';
+        if (activeTab === 'pending') return b.status === 'pending';
+        if (activeTab === 'upcoming') return b.status === 'upcoming' || b.status === 'confirmed';
         if (activeTab === 'ongoing') return b.status === 'ongoing' || b.status === 'quote_sent' || b.status === 'quote_approved';
         return b.status === activeTab;
       });
 
   const handleStatusUpdate = async (id, newStatus) => {
+    setBookingList(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
     try {
       const res = await fetch(`http://localhost:5000/api/bookings/${id}/status`, {
         method: 'PUT',
@@ -60,8 +63,7 @@ const ProviderBookings = () => {
       });
       const data = await res.json();
       if (data.success) {
-        setBookingList(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
-        toast.success(`Booking status updated to ${newStatus}`);
+        toast.success(newStatus === 'confirmed' ? 'Booking accepted!' : newStatus === 'cancelled' ? 'Booking declined' : `Booking status updated to ${newStatus}`);
       } else throw new Error();
     } catch (e) {
       toast.error('Failed to update booking status');

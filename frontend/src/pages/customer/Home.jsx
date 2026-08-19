@@ -56,7 +56,7 @@ const Home = () => {
     fetch(`http://localhost:5000/api/providers/nearby?lat=${lat}&lng=${lng}`)
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.services) {
+        if (data.success && data.services && data.services.length > 0) {
           setServices(data.services);
         } else {
           fetchDefaultServices();

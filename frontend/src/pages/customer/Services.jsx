@@ -137,15 +137,15 @@ const Services = () => {
             </button>
             {categories.map((cat) => (
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(selectedCategory === cat.name ? '' : cat.name)}
+                key={cat}
+                onClick={() => setSelectedCategory(selectedCategory === cat ? '' : cat)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all
-                          ${selectedCategory === cat.name
+                          ${selectedCategory === cat
                             ? 'bg-primary-600 text-white shadow-sm'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
               >
-                {cat.name}
+                {cat}
               </button>
             ))}
           </div>
