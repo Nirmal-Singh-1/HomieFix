@@ -5,9 +5,12 @@ import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaRupeeSign, FaImage } from 're
 import toast from 'react-hot-toast';
 
 
+import LocationModal from '../../components/common/LocationModal';
+
 const RequestCustomService = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     serviceTitle: '',
     description: '',
@@ -17,12 +20,25 @@ const RequestCustomService = () => {
     address: '',
     houseOrFlat: '',
     landmark: '',
+    locality: '',
+    city: '',
+    state: '',
+    pincode: '',
+    latitude: 29.3803,
+    longitude: 79.5126,
   });
 
-  // Mock location detection
-  const handleDetectLocation = () => {
-    toast.success('Location detected!');
-    setFormData({ ...formData, address: 'Dwarahat, Uttarakhand', latitude: 29.7783, longitude: 79.4312 });
+  const handleLocationPicked = (loc) => {
+    setFormData(prev => ({
+      ...prev,
+      address: loc.address,
+      locality: loc.locality || prev.locality,
+      city: loc.city || prev.city,
+      state: loc.state || prev.state,
+      pincode: loc.pincode || prev.pincode,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -31,19 +47,21 @@ const RequestCustomService = () => {
       return toast.error('Please fill all required fields');
     }
     
-    // Fallback coordinates if user didn't use detect location
     const locationObj = {
       address: formData.address,
       houseOrFlat: formData.houseOrFlat,
       landmark: formData.landmark,
-      latitude: formData.latitude || 29.7783, // Mock fallback
-      longitude: formData.longitude || 79.4312 // Mock fallback
+      locality: formData.locality,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      coordinates: [formData.longitude, formData.latitude] // GeoJSON Point [lng, lat]
     };
 
     setLoading(true);
     try {
-      // In real implementation, this hits the backend /api/custom-requests
-      // I am just using fetch directly to the backend here since mockApi might not be fully updated
       const res = await fetch('http://localhost:5000/api/custom-requests', {
         method: 'POST',
         headers: {
@@ -53,7 +71,7 @@ const RequestCustomService = () => {
         body: JSON.stringify({
           serviceTitle: formData.serviceTitle,
           description: formData.description,
-          photos: [], // Empty for now, file upload is complex in mock
+          photos: [],
           location: locationObj,
           date: formData.date,
           time: formData.time,
@@ -63,7 +81,7 @@ const RequestCustomService = () => {
       
       const data = await res.json();
       if (data.success) {
-        toast.success('Request sent to nearby providers!');
+        toast.success('Request sent to nearby service providers!');
         navigate('/my-custom-requests');
       } else {
         toast.error(data.message || 'Failed to submit request');
@@ -77,6 +95,17 @@ const RequestCustomService = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 pb-24">
+      <LocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSelectLocation={handleLocationPicked}
+        initialLocation={{
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          formattedAddress: formData.address
+        }}
+      />
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl font-bold text-gray-900">Tell us what you need</h1>
@@ -117,8 +146,8 @@ const RequestCustomService = () => {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
             <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Service Location</h2>
             
-            <button type="button" onClick={handleDetectLocation} className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-3 rounded-xl font-medium hover:bg-blue-100 transition">
-              <FaMapMarkerAlt /> Use Current Location
+            <button type="button" onClick={() => setIsLocationModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-3.5 rounded-xl font-bold hover:bg-blue-100 transition shadow-sm">
+              <FaMapMarkerAlt /> 📍 Select / Pin Location on Map
             </button>
 
             <div>

@@ -135,8 +135,37 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   };
 
-  const updateUser = (updatedData) => {
-    setUser((prev) => ({ ...prev, ...updatedData }));
+  const updateUser = async (updatedData) => {
+    try {
+      const res = await axios.put(`${API_BASE}/api/profile`, updatedData, { withCredentials: true });
+      if (res.data.success && res.data.user) {
+        setUser(res.data.user);
+        return res.data;
+      } else {
+        // Fallback local update if user payload not in response
+        setUser((prev) => ({ ...prev, ...updatedData }));
+        return res.data;
+      }
+    } catch (err) {
+      console.error('Failed to update profile on backend', err);
+      // Fallback local update
+      setUser((prev) => ({ ...prev, ...updatedData }));
+      throw err;
+    }
+  };
+
+  const updateProviderSettings = async (settings) => {
+    try {
+      const res = await axios.patch(`${API_BASE}/api/provider/settings`, settings, { withCredentials: true });
+      if (res.data.success && res.data.user) {
+        setUser(res.data.user);
+        return res.data;
+      }
+      return res.data;
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to update settings';
+      throw new Error(msg);
+    }
   };
 
   const value = {
@@ -151,6 +180,7 @@ export const AuthProvider = ({ children }) => {
     verifyOtp,
     logout,
     updateUser,
+    updateProviderSettings,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

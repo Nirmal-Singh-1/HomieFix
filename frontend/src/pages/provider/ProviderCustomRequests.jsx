@@ -5,7 +5,23 @@ import toast from 'react-hot-toast';
 import { EmptyState, ListSkeleton } from '../../components/common/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
 
+import LeafletMap from '../../components/common/LeafletMap';
+
 const tabs = ['new', 'accepted'];
+
+// Helper to calculate distance in km using Haversine formula
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // Radius of Earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(1);
+}
 
 const ProviderCustomRequests = () => {
   const { user } = useAuth();
@@ -80,8 +96,9 @@ const ProviderCustomRequests = () => {
   const myId = user?.id || user?._id;
 
   const filtered = requests.filter(r => {
-    const isAccepted = r.acceptedProviders.some(p => p._id === myId || p === myId) || (r.selectedProviderId && (r.selectedProviderId._id === myId || r.selectedProviderId === myId));
-    if (activeTab === 'new') return r.status === 'PENDING' && !isAccepted;
+    const isAccepted = (r.acceptedProviders && r.acceptedProviders.some(p => (p._id || p)?.toString() === myId?.toString())) || 
+                       (r.selectedProviderId && (r.selectedProviderId._id || r.selectedProviderId)?.toString() === myId?.toString());
+    if (activeTab === 'new') return (r.status === 'PENDING' || r.status === 'pending') && !isAccepted;
     if (activeTab === 'accepted') return isAccepted;
     return false;
   });
@@ -109,6 +126,14 @@ const ProviderCustomRequests = () => {
           filtered.map((req, i) => {
             const isSelected = req.selectedProviderId && (req.selectedProviderId._id === myId || req.selectedProviderId === myId);
 
+            // Calculate distance from provider base location
+            const reqLat = req.location?.latitude || (req.location?.coordinates && req.location.coordinates[1]);
+            const reqLng = req.location?.longitude || (req.location?.coordinates && req.location.coordinates[0]);
+            const provLat = user?.address?.latitude;
+            const provLng = user?.address?.longitude;
+
+            const distanceKm = calculateHaversineDistance(provLat, provLng, reqLat, reqLng);
+
             return (
               <motion.div key={req._id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 className={`bg-white p-5 rounded-2xl border ${isSelected ? 'border-purple-200 shadow-md ring-1 ring-purple-100' : 'border-gray-100 shadow-sm'} transition`}>
@@ -117,6 +142,11 @@ const ProviderCustomRequests = () => {
                     <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                       {req.serviceTitle || 'Custom Service'}
                       {isSelected && <span className="bg-purple-100 text-purple-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Selected by Customer</span>}
+                      {distanceKm && (
+                        <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-blue-200">
+                          📍 {distanceKm} km away
+                        </span>
+                      )}
                     </h3>
                     <p className="text-sm text-gray-600 mt-2">{req.description}</p>
                   </div>

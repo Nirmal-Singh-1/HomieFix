@@ -5,35 +5,72 @@ import { FaSearch, FaMapMarkerAlt, FaArrowRight, FaShieldAlt, FaLock, FaHeadset,
 import ServiceCard from '../../components/customer/ServiceCard';
 import { useEffect } from 'react';
 
+import LocationModal from '../../components/common/LocationModal';
+import { useAuth } from '../../context/AuthContext';
+
 const categories = [
-  { id: 'cleaning', name: 'Cleaning', icon: 'FaBroom', desc: 'Home & Office' },
-  { id: 'plumbing', name: 'Plumbing', icon: 'FaFaucet', desc: 'Repairs & Fitting' },
-  { id: 'electrical', name: 'Electrical', icon: 'FaBolt', desc: 'Wiring & Fixes' },
-  { id: 'painting', name: 'Painting', icon: 'FaPaintRoller', desc: 'Wall & Texture' },
-  { id: 'carpentry', name: 'Carpentry', icon: 'FaHammer', desc: 'Woodwork' },
-  { id: 'appliances', name: 'Appliances', icon: 'FaSnowflake', desc: 'AC & Fridge' },
-  { id: 'pest-control', name: 'Pest Control', icon: 'FaBug', desc: 'Termite & Ants' },
-  { id: 'handyman', name: 'Handyman', icon: 'FaWrench', desc: 'General Repairs' }
+  { id: 'cleaning', name: 'Cleaning', icon: 'FaBroom', desc: 'Home & Office', color: 'from-amber-500 to-orange-600', count: 42 },
+  { id: 'plumbing', name: 'Plumbing', icon: 'FaFaucet', desc: 'Repairs & Fitting', color: 'from-blue-500 to-indigo-600', count: 35 },
+  { id: 'electrical', name: 'Electrical', icon: 'FaBolt', desc: 'Wiring & Fixes', color: 'from-yellow-500 to-amber-600', count: 28 },
+  { id: 'painting', name: 'Painting', icon: 'FaPaintRoller', desc: 'Wall & Texture', color: 'from-purple-500 to-pink-600', count: 19 },
+  { id: 'carpentry', name: 'Carpentry', icon: 'FaHammer', desc: 'Woodwork', color: 'from-emerald-500 to-teal-600', count: 24 },
+  { id: 'appliances', name: 'Appliances', icon: 'FaSnowflake', desc: 'AC & Fridge', color: 'from-cyan-500 to-blue-600', count: 31 },
+  { id: 'pest-control', name: 'Pest Control', icon: 'FaBug', desc: 'Termite & Ants', color: 'from-rose-500 to-red-600', count: 15 },
+  { id: 'handyman', name: 'Handyman', icon: 'FaWrench', desc: 'General Repairs', color: 'from-slate-600 to-slate-800', count: 50 }
 ];
 
 const iconMap = { FaBolt, FaFaucet, FaBroom, FaHammer, FaSnowflake, FaPaintRoller, FaWrench, FaBug };
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState('Dwarahat, Uttarakhand');
   const [services, setServices] = useState([]);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
+    if (user?.address?.latitude && user?.address?.longitude) {
+      const initialLoc = {
+        latitude: user.address.latitude,
+        longitude: user.address.longitude,
+        address: user.address.formattedAddress || `${user.address.city || ''}, ${user.address.state || ''}`,
+      };
+      setUserLocation(initialLoc);
+      fetchNearbyServices(initialLoc.latitude, initialLoc.longitude);
+    } else {
+      fetchDefaultServices();
+    }
+  }, [user]);
+
+  const fetchDefaultServices = () => {
     fetch('http://localhost:5000/api/services')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.services) setServices(data.services);
       })
       .catch(console.error);
-  }, []);
+  };
 
-  const popularServices = services.slice(0, 4); // Show top 4 services
+  const fetchNearbyServices = (lat, lng) => {
+    fetch(`http://localhost:5000/api/providers/nearby?lat=${lat}&lng=${lng}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.services) {
+          setServices(data.services);
+        } else {
+          fetchDefaultServices();
+        }
+      })
+      .catch(() => fetchDefaultServices());
+  };
+
+  const handleLocationSelected = (loc) => {
+    setUserLocation(loc);
+    fetchNearbyServices(loc.latitude, loc.longitude);
+  };
+
+  const popularServices = services.slice(0, 4);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -49,6 +86,13 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
+      <LocationModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSelectLocation={handleLocationSelected}
+        initialLocation={userLocation}
+      />
+
       {/* Hero Section */}
       <section className="relative gradient-hero overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
@@ -80,6 +124,22 @@ const Home = () => {
             <p className="text-blue-100 mt-4 text-lg md:text-xl max-w-2xl mx-auto">
               Book electricians, plumbers, cleaners & more — verified professionals at your doorstep
             </p>
+
+            {/* Location Discovery Bar */}
+            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-3 bg-white/15 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/20 text-white text-sm">
+              <span className="font-bold flex items-center gap-1.5 text-secondary-300">
+                <FaMapMarkerAlt /> Your Location:
+              </span>
+              <span className="font-medium text-white max-w-xs truncate">
+                {userLocation?.address || 'No location set'}
+              </span>
+              <button
+                onClick={() => setIsLocationModalOpen(true)}
+                className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all border border-white/30 flex items-center gap-1"
+              >
+                {userLocation ? 'Change Location' : '📍 Use My Current Location'}
+              </button>
+            </div>
 
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="mt-8 max-w-2xl mx-auto">
@@ -115,14 +175,7 @@ const Home = () => {
               </Link>
             </motion.div>
 
-            {/* Location */}
-            <div className="flex items-center justify-center gap-2 mt-4 text-blue-200 text-sm">
-              <FaMapMarkerAlt className="text-secondary-400" />
-              <span>Delivering in:</span>
-              <button className="font-semibold text-white hover:text-secondary-400 transition-colors flex items-center gap-1">
-                {selectedCity} <FaArrowRight className="text-[10px]" />
-              </button>
-            </div>
+
 
 
           </motion.div>

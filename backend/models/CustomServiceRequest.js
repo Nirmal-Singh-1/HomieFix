@@ -6,13 +6,19 @@ const customServiceRequestSchema = new mongoose.Schema({
   description: { type: String, required: true },
   photos: [{ type: String }],
   
-  // Service Location
+  // Service Location GeoJSON [longitude, latitude]
   location: {
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], required: true }, // [longitude, latitude]
     address: { type: String, required: true },
+    locality: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pincode: { type: String },
     houseOrFlat: { type: String },
-    landmark: { type: String }
+    landmark: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
   },
 
   date: { type: String, required: true },
